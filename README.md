@@ -1,6 +1,6 @@
 # OpenUsage for Raycast
 
-Track your AI coding subscription usage directly from the macOS menu bar.
+Track your AI coding subscription usage directly from the Raycast menu bar.
 
 A [Raycast](https://raycast.com) extension port of [OpenUsage](https://github.com/robinebers/openusage) by [@robinebers](https://github.com/robinebers) — the open-source AI subscription usage tracker.
 
@@ -16,7 +16,7 @@ A [Raycast](https://raycast.com) extension port of [OpenUsage](https://github.co
 
 ### AI Usage Menu Bar
 
-Shows a summary icon and your highest usage percentage in the macOS menu bar. Clicking it reveals a dropdown with per-provider usage lines. Auto-refreshes every 5 minutes.
+Shows a summary icon and your highest usage percentage in the Raycast menu bar. Clicking it reveals a dropdown with per-provider usage lines. Auto-refreshes every 5 minutes.
 
 ### Show AI Usage
 
@@ -28,7 +28,7 @@ Each provider reads credentials from its respective CLI tool's local auth files 
 
 - **OAuth token refresh** is handled automatically when tokens expire
 - **Credentials are never sent anywhere** except to the provider's own API
-- **OS keyring support** for providers that store tokens in macOS Keychain or Windows Credential Manager
+- **OS keyring support** for providers that store tokens in the OS credential store (Windows Credential Manager, macOS Keychain)
 
 ## Install
 
