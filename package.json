@@ -1,0 +1,44 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "openusage",
+  "title": "OpenUsage",
+  "description": "Track AI coding subscription usage from the menu bar",
+  "icon": "icon.png",
+  "author": "gleve",
+  "categories": ["Developer Tools", "Productivity"],
+  "license": "MIT",
+  "commands": [
+    {
+      "name": "menu-bar",
+      "title": "AI Usage Menu Bar",
+      "description": "Shows AI subscription usage in the menu bar",
+      "mode": "menu-bar",
+      "interval": "5m"
+    },
+    {
+      "name": "show-usage",
+      "title": "Show AI Usage",
+      "description": "Detailed AI subscription usage breakdown",
+      "mode": "view"
+    }
+  ],
+  "preferences": [],
+  "dependencies": {
+    "@raycast/api": "^1.103.10",
+    "@raycast/utils": "^2.2.2"
+  },
+  "devDependencies": {
+    "@raycast/eslint-config": "^1.0.11",
+    "@types/node": "22.x",
+    "@types/react": "19.x",
+    "eslint": "^8.57.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.4.5"
+  },
+  "scripts": {
+    "build": "ray build",
+    "dev": "ray develop",
+    "fix-lint": "ray lint --fix",
+    "lint": "ray lint"
+  }
+}
