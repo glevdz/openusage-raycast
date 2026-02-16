@@ -20,6 +20,18 @@
       "title": "Show AI Usage",
       "description": "Detailed AI subscription usage breakdown",
       "mode": "view"
+    },
+    {
+      "name": "velocity-dashboard",
+      "title": "Velocity Dashboard",
+      "description": "Auto-captured AI development velocity metrics from Claude Code sessions",
+      "mode": "view"
+    },
+    {
+      "name": "estimate-project",
+      "title": "Estimate Project",
+      "description": "Predict project timeline using AI velocity data",
+      "mode": "view"
     }
   ],
   "preferences": [],

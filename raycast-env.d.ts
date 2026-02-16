@@ -17,6 +17,10 @@ declare namespace Preferences {
   export type MenuBar = ExtensionPreferences & {}
   /** Preferences accessible in the `show-usage` command */
   export type ShowUsage = ExtensionPreferences & {}
+  /** Preferences accessible in the `velocity-dashboard` command */
+  export type VelocityDashboard = ExtensionPreferences & {}
+  /** Preferences accessible in the `estimate-project` command */
+  export type EstimateProject = ExtensionPreferences & {}
 }
 
 declare namespace Arguments {
@@ -24,5 +28,9 @@ declare namespace Arguments {
   export type MenuBar = {}
   /** Arguments passed to the `show-usage` command */
   export type ShowUsage = {}
+  /** Arguments passed to the `velocity-dashboard` command */
+  export type VelocityDashboard = {}
+  /** Arguments passed to the `estimate-project` command */
+  export type EstimateProject = {}
 }
 
