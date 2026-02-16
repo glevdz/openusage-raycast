@@ -4,7 +4,7 @@
   "title": "OpenUsage",
   "description": "Track AI coding subscription usage from the menu bar",
   "icon": "icon.png",
-  "author": "gleve",
+  "author": "sven_arnarsson",
   "categories": ["Developer Tools", "Productivity"],
   "license": "MIT",
   "commands": [

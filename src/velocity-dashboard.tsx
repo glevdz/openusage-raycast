@@ -1,5 +1,13 @@
 import React from "react";
-import { Action, ActionPanel, Color, Icon, List, showToast, Toast } from "@raycast/api";
+import {
+  Action,
+  ActionPanel,
+  Color,
+  Icon,
+  List,
+  showToast,
+  Toast,
+} from "@raycast/api";
 import { useCachedPromise } from "@raycast/utils";
 import {
   clearVelocityCache,
@@ -10,7 +18,13 @@ import {
   type ProjectStats,
   type SessionMetric,
 } from "./lib/velocity";
-import { scanRepos, matchReposToSessions, getRepoEstimate, clearGithubCache, type EnrichedRepo } from "./lib/github";
+import {
+  scanRepos,
+  matchReposToSessions,
+  getRepoEstimate,
+  clearGithubCache,
+  type EnrichedRepo,
+} from "./lib/github";
 import { probeAll, type ProviderWithResult } from "./providers";
 import { setCachedResult } from "./lib/cache";
 import {
@@ -72,23 +86,57 @@ function SessionDetail({ session }: { session: SessionMetric }) {
     <List.Item.Detail
       metadata={
         <List.Item.Detail.Metadata>
-          <List.Item.Detail.Metadata.Label title="Project" text={session.projectName} />
-          <List.Item.Detail.Metadata.Label title="Model" text={formatModelName(session.model)} />
+          <List.Item.Detail.Metadata.Label
+            title="Project"
+            text={session.projectName}
+          />
+          <List.Item.Detail.Metadata.Label
+            title="Model"
+            text={formatModelName(session.model)}
+          />
           <List.Item.Detail.Metadata.Separator />
-          <List.Item.Detail.Metadata.Label title="Duration" text={formatDuration(session.durationMin)} />
-          <List.Item.Detail.Metadata.Label title="Turns" text={String(session.turns)} />
-          <List.Item.Detail.Metadata.Label title="Sub-Agents" text={String(session.subAgentsSpawned)} />
+          <List.Item.Detail.Metadata.Label
+            title="Duration"
+            text={formatDuration(session.durationMin)}
+          />
+          <List.Item.Detail.Metadata.Label
+            title="Turns"
+            text={String(session.turns)}
+          />
+          <List.Item.Detail.Metadata.Label
+            title="Sub-Agents"
+            text={String(session.subAgentsSpawned)}
+          />
           <List.Item.Detail.Metadata.Separator />
-          <List.Item.Detail.Metadata.Label title="Input Tokens" text={formatTokens(session.totalInputTokens)} />
-          <List.Item.Detail.Metadata.Label title="Output Tokens" text={formatTokens(session.totalOutputTokens)} />
+          <List.Item.Detail.Metadata.Label
+            title="Input Tokens"
+            text={formatTokens(session.totalInputTokens)}
+          />
+          <List.Item.Detail.Metadata.Label
+            title="Output Tokens"
+            text={formatTokens(session.totalOutputTokens)}
+          />
           <List.Item.Detail.Metadata.Separator />
-          <List.Item.Detail.Metadata.Label title="Tool Uses" text={String(session.toolUses)} />
+          <List.Item.Detail.Metadata.Label
+            title="Tool Uses"
+            text={String(session.toolUses)}
+          />
           {topTools.map(([name, count]) => (
-            <List.Item.Detail.Metadata.Label key={name} title={`  ${name}`} text={String(count)} />
+            <List.Item.Detail.Metadata.Label
+              key={name}
+              title={`  ${name}`}
+              text={String(count)}
+            />
           ))}
           <List.Item.Detail.Metadata.Separator />
-          <List.Item.Detail.Metadata.Label title="Started" text={new Date(session.startedAt).toLocaleString()} />
-          <List.Item.Detail.Metadata.Label title="Ended" text={new Date(session.endedAt).toLocaleString()} />
+          <List.Item.Detail.Metadata.Label
+            title="Started"
+            text={new Date(session.startedAt).toLocaleString()}
+          />
+          <List.Item.Detail.Metadata.Label
+            title="Ended"
+            text={new Date(session.endedAt).toLocaleString()}
+          />
         </List.Item.Detail.Metadata>
       }
     />
@@ -100,22 +148,48 @@ function OverviewDetail({ stats }: { stats: AggregateStats }) {
     <List.Item.Detail
       metadata={
         <List.Item.Detail.Metadata>
-          <List.Item.Detail.Metadata.Label title="Total Sessions" text={String(stats.totalSessions)} />
-          <List.Item.Detail.Metadata.Label title="Total Coding Hours" text={`${stats.totalCodingHours}h`} />
-          <List.Item.Detail.Metadata.Label title="Avg Session" text={formatDuration(stats.avgSessionMin)} />
+          <List.Item.Detail.Metadata.Label
+            title="Total Sessions"
+            text={String(stats.totalSessions)}
+          />
+          <List.Item.Detail.Metadata.Label
+            title="Total Coding Hours"
+            text={`${stats.totalCodingHours}h`}
+          />
+          <List.Item.Detail.Metadata.Label
+            title="Avg Session"
+            text={formatDuration(stats.avgSessionMin)}
+          />
           <List.Item.Detail.Metadata.Separator />
-          <List.Item.Detail.Metadata.Label title="Input Tokens" text={formatTokens(stats.totalInputTokens)} />
-          <List.Item.Detail.Metadata.Label title="Output Tokens" text={formatTokens(stats.totalOutputTokens)} />
-          <List.Item.Detail.Metadata.Label title="Sub-Agents Spawned" text={String(stats.subAgentTotal)} />
+          <List.Item.Detail.Metadata.Label
+            title="Input Tokens"
+            text={formatTokens(stats.totalInputTokens)}
+          />
+          <List.Item.Detail.Metadata.Label
+            title="Output Tokens"
+            text={formatTokens(stats.totalOutputTokens)}
+          />
+          <List.Item.Detail.Metadata.Label
+            title="Sub-Agents Spawned"
+            text={String(stats.subAgentTotal)}
+          />
           <List.Item.Detail.Metadata.Separator />
           <List.Item.Detail.Metadata.Label title="Model Distribution" />
           {Object.entries(stats.modelDistribution).map(([model, pct]) => (
-            <List.Item.Detail.Metadata.Label key={model} title={`  ${formatModelName(model)}`} text={`${pct}%`} />
+            <List.Item.Detail.Metadata.Label
+              key={model}
+              title={`  ${formatModelName(model)}`}
+              text={`${pct}%`}
+            />
           ))}
           <List.Item.Detail.Metadata.Separator />
           <List.Item.Detail.Metadata.Label title="Most Active Projects" />
           {stats.mostActiveProjects.map((p) => (
-            <List.Item.Detail.Metadata.Label key={p.name} title={`  ${p.name}`} text={`${p.sessions} sessions`} />
+            <List.Item.Detail.Metadata.Label
+              key={p.name}
+              title={`  ${p.name}`}
+              text={`${p.sessions} sessions`}
+            />
           ))}
         </List.Item.Detail.Metadata>
       }
@@ -128,17 +202,41 @@ function ProjectDetail({ project }: { project: ProjectStats }) {
     <List.Item.Detail
       metadata={
         <List.Item.Detail.Metadata>
-          <List.Item.Detail.Metadata.Label title="Project" text={project.projectName} />
-          <List.Item.Detail.Metadata.Label title="Path" text={project.project} />
+          <List.Item.Detail.Metadata.Label
+            title="Project"
+            text={project.projectName}
+          />
+          <List.Item.Detail.Metadata.Label
+            title="Path"
+            text={project.project}
+          />
           <List.Item.Detail.Metadata.Separator />
-          <List.Item.Detail.Metadata.Label title="Sessions" text={String(project.sessions)} />
-          <List.Item.Detail.Metadata.Label title="Total Time" text={formatDuration(project.totalDurationMin)} />
-          <List.Item.Detail.Metadata.Label title="Most Used Model" text={formatModelName(project.mostUsedModel)} />
+          <List.Item.Detail.Metadata.Label
+            title="Sessions"
+            text={String(project.sessions)}
+          />
+          <List.Item.Detail.Metadata.Label
+            title="Total Time"
+            text={formatDuration(project.totalDurationMin)}
+          />
+          <List.Item.Detail.Metadata.Label
+            title="Most Used Model"
+            text={formatModelName(project.mostUsedModel)}
+          />
           <List.Item.Detail.Metadata.Separator />
-          <List.Item.Detail.Metadata.Label title="Input Tokens" text={formatTokens(project.totalInputTokens)} />
-          <List.Item.Detail.Metadata.Label title="Output Tokens" text={formatTokens(project.totalOutputTokens)} />
+          <List.Item.Detail.Metadata.Label
+            title="Input Tokens"
+            text={formatTokens(project.totalInputTokens)}
+          />
+          <List.Item.Detail.Metadata.Label
+            title="Output Tokens"
+            text={formatTokens(project.totalOutputTokens)}
+          />
           <List.Item.Detail.Metadata.Separator />
-          <List.Item.Detail.Metadata.Label title="Last Active" text={new Date(project.lastActive).toLocaleString()} />
+          <List.Item.Detail.Metadata.Label
+            title="Last Active"
+            text={new Date(project.lastActive).toLocaleString()}
+          />
         </List.Item.Detail.Metadata>
       }
     />
@@ -162,13 +260,31 @@ function RepoDetail({ repo }: { repo: EnrichedRepo }) {
     <List.Item.Detail
       metadata={
         <List.Item.Detail.Metadata>
-          <List.Item.Detail.Metadata.Label title="Repository" text={`${repo.owner}/${repo.name}`} />
-          <List.Item.Detail.Metadata.Label title="Primary Language" text={repo.primaryLanguage} />
-          <List.Item.Detail.Metadata.Label title="Size" text={formatSize(repo.sizeKB)} />
+          <List.Item.Detail.Metadata.Label
+            title="Repository"
+            text={`${repo.owner}/${repo.name}`}
+          />
+          <List.Item.Detail.Metadata.Label
+            title="Primary Language"
+            text={repo.primaryLanguage}
+          />
+          <List.Item.Detail.Metadata.Label
+            title="Size"
+            text={formatSize(repo.sizeKB)}
+          />
           <List.Item.Detail.Metadata.Separator />
-          <List.Item.Detail.Metadata.Label title="Commits (90d)" text={String(repo.commitCount)} />
-          <List.Item.Detail.Metadata.Label title="Velocity" text={`${repo.commitVelocity} commits/week`} />
-          <List.Item.Detail.Metadata.Label title="Last Push" text={new Date(repo.pushedAt).toLocaleString()} />
+          <List.Item.Detail.Metadata.Label
+            title="Commits (90d)"
+            text={String(repo.commitCount)}
+          />
+          <List.Item.Detail.Metadata.Label
+            title="Velocity"
+            text={`${repo.commitVelocity} commits/week`}
+          />
+          <List.Item.Detail.Metadata.Label
+            title="Last Push"
+            text={new Date(repo.pushedAt).toLocaleString()}
+          />
           <List.Item.Detail.Metadata.Separator />
           {topLangs.length > 0 && (
             <>
@@ -183,19 +299,41 @@ function RepoDetail({ repo }: { repo: EnrichedRepo }) {
               <List.Item.Detail.Metadata.Separator />
             </>
           )}
-          <List.Item.Detail.Metadata.Label title="Complexity" text={`${Math.round(estimate.complexityScore * 100)}%`} />
+          <List.Item.Detail.Metadata.Label
+            title="Complexity"
+            text={`${Math.round(estimate.complexityScore * 100)}%`}
+          />
           <List.Item.Detail.Metadata.Label
             title="Est. Remaining"
             text={`${estimate.estimatedSessionsRemaining} sessions (~${formatDuration(estimate.estimatedMinutesRemaining)})`}
           />
-          <List.Item.Detail.Metadata.Label title="Data Source" text={estimate.basedOnSessions ? "Matched sessions" : "Default multipliers"} />
+          <List.Item.Detail.Metadata.Label
+            title="Data Source"
+            text={
+              estimate.basedOnSessions
+                ? "Matched sessions"
+                : "Default multipliers"
+            }
+          />
           {repo.matchedProject && (
             <>
               <List.Item.Detail.Metadata.Separator />
-              <List.Item.Detail.Metadata.Label title="Matched Project" text={repo.matchedProject.projectName} />
-              <List.Item.Detail.Metadata.Label title="Sessions" text={String(repo.matchedProject.sessions)} />
-              <List.Item.Detail.Metadata.Label title="Total Time" text={formatDuration(repo.matchedProject.totalDurationMin)} />
-              <List.Item.Detail.Metadata.Label title="Tokens Out" text={formatTokens(repo.matchedProject.totalOutputTokens)} />
+              <List.Item.Detail.Metadata.Label
+                title="Matched Project"
+                text={repo.matchedProject.projectName}
+              />
+              <List.Item.Detail.Metadata.Label
+                title="Sessions"
+                text={String(repo.matchedProject.sessions)}
+              />
+              <List.Item.Detail.Metadata.Label
+                title="Total Time"
+                text={formatDuration(repo.matchedProject.totalDurationMin)}
+              />
+              <List.Item.Detail.Metadata.Label
+                title="Tokens Out"
+                text={formatTokens(repo.matchedProject.totalOutputTokens)}
+              />
             </>
           )}
         </List.Item.Detail.Metadata>
@@ -212,7 +350,10 @@ function LiveUsageDetail({ result }: { result: ProviderWithResult }) {
       <List.Item.Detail
         metadata={
           <List.Item.Detail.Metadata>
-            <List.Item.Detail.Metadata.Label title="Error" text={probeResult.error} />
+            <List.Item.Detail.Metadata.Label
+              title="Error"
+              text={probeResult.error}
+            />
           </List.Item.Detail.Metadata>
         }
       />
@@ -225,7 +366,10 @@ function LiveUsageDetail({ result }: { result: ProviderWithResult }) {
         <List.Item.Detail.Metadata>
           {probeResult.plan && (
             <>
-              <List.Item.Detail.Metadata.Label title="Plan" text={probeResult.plan} />
+              <List.Item.Detail.Metadata.Label
+                title="Plan"
+                text={probeResult.plan}
+              />
               <List.Item.Detail.Metadata.Separator />
             </>
           )}
@@ -236,26 +380,52 @@ function LiveUsageDetail({ result }: { result: ProviderWithResult }) {
                 const color = getUsageColor(line.used, line.limit);
                 return (
                   <React.Fragment key={idx}>
-                    <List.Item.Detail.Metadata.Label title={line.label} text={formatLineValue(line)} />
+                    <List.Item.Detail.Metadata.Label
+                      title={line.label}
+                      text={formatLineValue(line)}
+                    />
                     {line.resetsAt && (
-                      <List.Item.Detail.Metadata.Label title="Resets" text={formatResetTime(line.resetsAt)} />
+                      <List.Item.Detail.Metadata.Label
+                        title="Resets"
+                        text={formatResetTime(line.resetsAt)}
+                      />
                     )}
                     <List.Item.Detail.Metadata.TagList title="Status">
                       <List.Item.Detail.Metadata.TagList.Item
-                        text={pct >= 90 ? "High Usage" : pct >= 70 ? "Moderate" : "On Track"}
+                        text={
+                          pct >= 90
+                            ? "High Usage"
+                            : pct >= 70
+                              ? "Moderate"
+                              : "On Track"
+                        }
                         color={color}
                       />
                     </List.Item.Detail.Metadata.TagList>
-                    {idx < probeResult.lines.length - 1 && <List.Item.Detail.Metadata.Separator />}
+                    {idx < probeResult.lines.length - 1 && (
+                      <List.Item.Detail.Metadata.Separator />
+                    )}
                   </React.Fragment>
                 );
               }
               case "text":
-                return <List.Item.Detail.Metadata.Label key={idx} title={line.label} text={line.value} />;
+                return (
+                  <List.Item.Detail.Metadata.Label
+                    key={idx}
+                    title={line.label}
+                    text={line.value}
+                  />
+                );
               case "badge":
                 return (
-                  <List.Item.Detail.Metadata.TagList key={idx} title={line.label}>
-                    <List.Item.Detail.Metadata.TagList.Item text={line.text} color={Color.SecondaryText} />
+                  <List.Item.Detail.Metadata.TagList
+                    key={idx}
+                    title={line.label}
+                  >
+                    <List.Item.Detail.Metadata.TagList.Item
+                      text={line.text}
+                      color={Color.SecondaryText}
+                    />
                   </List.Item.Detail.Metadata.TagList>
                 );
             }
@@ -271,13 +441,14 @@ function LiveUsageDetail({ result }: { result: ProviderWithResult }) {
 export default function VelocityDashboard() {
   const { data, isLoading, revalidate } = useCachedPromise(
     async () => {
-      const [sessions, stats, projects, providerResults, repos] = await Promise.all([
-        getSessionMetrics(),
-        getAggregateStats(),
-        getProjectStats(),
-        probeAll(),
-        scanRepos(),
-      ]);
+      const [sessions, stats, projects, providerResults, repos] =
+        await Promise.all([
+          getSessionMetrics(),
+          getAggregateStats(),
+          getProjectStats(),
+          probeAll(),
+          scanRepos(),
+        ]);
 
       // Update provider cache
       for (const { provider, result } of providerResults) {
@@ -288,12 +459,20 @@ export default function VelocityDashboard() {
       const providersWithPredictions = await Promise.all(
         providerResults.map(async ({ provider, result }) => {
           const percentLine = result.lines.find(
-            (l): l is ProgressLine => l.type === "progress" && l.format.kind === "percent",
+            (l): l is ProgressLine =>
+              l.type === "progress" && l.format.kind === "percent",
           );
           let prediction = null;
           if (percentLine) {
-            const snapshots = await getSnapshots(provider.id, percentLine.label);
-            prediction = calculatePrediction(snapshots, getUsagePercent(percentLine), percentLine.periodDurationMs);
+            const snapshots = await getSnapshots(
+              provider.id,
+              percentLine.label,
+            );
+            prediction = calculatePrediction(
+              snapshots,
+              getUsagePercent(percentLine),
+              percentLine.periodDurationMs,
+            );
           }
           return { provider, result, prediction };
         }),
@@ -301,7 +480,13 @@ export default function VelocityDashboard() {
 
       const enrichedRepos = matchReposToSessions(repos, projects);
 
-      return { sessions, stats, projects, providers: providersWithPredictions, repos: enrichedRepos };
+      return {
+        sessions,
+        stats,
+        projects,
+        providers: providersWithPredictions,
+        repos: enrichedRepos,
+      };
     },
     [],
     { keepPreviousData: true },
@@ -315,7 +500,10 @@ export default function VelocityDashboard() {
 
   async function handleRefresh() {
     await Promise.all([clearVelocityCache(), clearGithubCache()]);
-    await showToast({ style: Toast.Style.Animated, title: "Re-scanning sessions & repos..." });
+    await showToast({
+      style: Toast.Style.Animated,
+      title: "Re-scanning sessions & repos...",
+    });
     revalidate();
   }
 
@@ -332,8 +520,16 @@ export default function VelocityDashboard() {
 
   const defaultActions = (
     <ActionPanel>
-      <Action title="Refresh" icon={Icon.ArrowClockwise} onAction={handleRefresh} />
-      <Action.CopyToClipboard title="Copy Summary" content={buildSummary()} shortcut={{ modifiers: ["cmd"], key: "c" }} />
+      <Action
+        title="Refresh"
+        icon={Icon.ArrowClockwise}
+        onAction={handleRefresh}
+      />
+      <Action.CopyToClipboard
+        title="Copy Summary"
+        content={buildSummary()}
+        shortcut={{ modifiers: ["cmd"], key: "c" }}
+      />
     </ActionPanel>
   );
 
@@ -344,18 +540,25 @@ export default function VelocityDashboard() {
         <List.Section title="Live Usage">
           {providers.map(({ provider, result, prediction }) => {
             const percentLine = result.lines.find(
-              (l): l is ProgressLine => l.type === "progress" && l.format.kind === "percent",
+              (l): l is ProgressLine =>
+                l.type === "progress" && l.format.kind === "percent",
             );
             const pct = percentLine ? getUsagePercent(percentLine) : null;
-            const tag =
-              result.error
-                ? { value: "Error", color: Color.Red }
-                : pct !== null
-                  ? {
-                      value: `${Math.round(pct)}%`,
-                      color: pct >= 90 ? Color.Red : pct >= 70 ? Color.Orange : pct >= 50 ? Color.Yellow : Color.Green,
-                    }
-                  : { value: "N/A", color: Color.SecondaryText };
+            const tag = result.error
+              ? { value: "Error", color: Color.Red }
+              : pct !== null
+                ? {
+                    value: `${Math.round(pct)}%`,
+                    color:
+                      pct >= 90
+                        ? Color.Red
+                        : pct >= 70
+                          ? Color.Orange
+                          : pct >= 50
+                            ? Color.Yellow
+                            : Color.Green,
+                  }
+                : { value: "N/A", color: Color.SecondaryText };
 
             const subtitle = prediction
               ? `${formatBurnRate(prediction.burnRate)} ${formatTimeToLimit(prediction.timeToLimitMs)}`
@@ -368,7 +571,14 @@ export default function VelocityDashboard() {
                 subtitle={subtitle}
                 icon={{ source: provider.icon }}
                 accessories={[
-                  ...(prediction ? [{ icon: getPaceIcon(prediction.paceLabel), tooltip: prediction.paceLabel }] : []),
+                  ...(prediction
+                    ? [
+                        {
+                          icon: getPaceIcon(prediction.paceLabel),
+                          tooltip: prediction.paceLabel,
+                        },
+                      ]
+                    : []),
                   { tag },
                 ]}
                 detail={<LiveUsageDetail result={{ provider, result }} />}
@@ -386,7 +596,14 @@ export default function VelocityDashboard() {
             title="Velocity Stats"
             icon={Icon.Gauge}
             subtitle={`${stats.totalSessions} sessions, ${stats.totalCodingHours}h total`}
-            accessories={[{ tag: { value: `${formatDuration(stats.avgSessionMin)} avg`, color: Color.Blue } }]}
+            accessories={[
+              {
+                tag: {
+                  value: `${formatDuration(stats.avgSessionMin)} avg`,
+                  color: Color.Blue,
+                },
+              },
+            ]}
             detail={<OverviewDetail stats={stats} />}
             actions={defaultActions}
           />
@@ -409,13 +626,20 @@ export default function VelocityDashboard() {
               detail={<ProjectDetail project={p} />}
               actions={
                 <ActionPanel>
-                  <Action title="Refresh" icon={Icon.ArrowClockwise} onAction={handleRefresh} />
+                  <Action
+                    title="Refresh"
+                    icon={Icon.ArrowClockwise}
+                    onAction={handleRefresh}
+                  />
                   <Action.CopyToClipboard
                     title="Copy Project Stats"
                     content={`${p.projectName}: ${p.sessions} sessions, ${formatDuration(p.totalDurationMin)}, ${formatTokens(p.totalOutputTokens)} tokens out`}
                     shortcut={{ modifiers: ["cmd"], key: "c" }}
                   />
-                  <Action.OpenInBrowser title="Open in Terminal" url={`file://${p.project}`} />
+                  <Action.OpenInBrowser
+                    title="Open in Terminal"
+                    url={`file://${p.project}`}
+                  />
                 </ActionPanel>
               }
             />
@@ -434,7 +658,14 @@ export default function VelocityDashboard() {
               icon={Icon.Code}
               accessories={[
                 ...(repo.matchedProject
-                  ? [{ tag: { value: `${repo.matchedProject.sessions} sessions`, color: Color.Purple } }]
+                  ? [
+                      {
+                        tag: {
+                          value: `${repo.matchedProject.sessions} sessions`,
+                          color: Color.Purple,
+                        },
+                      },
+                    ]
                   : []),
                 { tag: `${repo.commitVelocity}/wk` },
                 { text: timeAgo(repo.pushedAt) },
@@ -442,7 +673,11 @@ export default function VelocityDashboard() {
               detail={<RepoDetail repo={repo} />}
               actions={
                 <ActionPanel>
-                  <Action title="Refresh" icon={Icon.ArrowClockwise} onAction={handleRefresh} />
+                  <Action
+                    title="Refresh"
+                    icon={Icon.ArrowClockwise}
+                    onAction={handleRefresh}
+                  />
                   <Action.OpenInBrowser title="Open on GitHub" url={repo.url} />
                   <Action.CopyToClipboard
                     title="Copy Repo Stats"
@@ -474,14 +709,25 @@ export default function VelocityDashboard() {
             accessories={[
               { tag: formatModelName(s.model) },
               ...(s.subAgentsSpawned > 0
-                ? [{ tag: { value: `${s.subAgentsSpawned} agents`, color: Color.Purple } }]
+                ? [
+                    {
+                      tag: {
+                        value: `${s.subAgentsSpawned} agents`,
+                        color: Color.Purple,
+                      },
+                    },
+                  ]
                 : []),
               { text: timeAgo(s.startedAt) },
             ]}
             detail={<SessionDetail session={s} />}
             actions={
               <ActionPanel>
-                <Action title="Refresh" icon={Icon.ArrowClockwise} onAction={handleRefresh} />
+                <Action
+                  title="Refresh"
+                  icon={Icon.ArrowClockwise}
+                  onAction={handleRefresh}
+                />
                 <Action.CopyToClipboard
                   title="Copy Session Info"
                   content={`${s.projectName}: ${formatDuration(s.durationMin)}, ${s.turns} turns, ${formatTokens(s.totalOutputTokens)} tokens out, ${s.toolUses} tool uses`}

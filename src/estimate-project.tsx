@@ -1,10 +1,28 @@
 import { useEffect, useState } from "react";
 import { Action, ActionPanel, Detail, Form } from "@raycast/api";
-import { estimateProject, type EstimateResult, type ModelType, type TaskType } from "./lib/estimator";
-import { scanRepos, matchReposToSessions, getRepoEstimate, type EnrichedRepo } from "./lib/github";
+import {
+  estimateProject,
+  type EstimateResult,
+  type ModelType,
+  type TaskType,
+} from "./lib/estimator";
+import {
+  scanRepos,
+  matchReposToSessions,
+  getRepoEstimate,
+  type EnrichedRepo,
+} from "./lib/github";
 import { getProjectStats } from "./lib/velocity";
 
-function ResultView({ result, humanHours, repo }: { result: EstimateResult; humanHours: number; repo?: EnrichedRepo }) {
+function ResultView({
+  result,
+  humanHours,
+  repo,
+}: {
+  result: EstimateResult;
+  humanHours: number;
+  repo?: EnrichedRepo;
+}) {
   const hours = Math.floor(result.estimatedMinutes / 60);
   const mins = result.estimatedMinutes % 60;
   const timeStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
@@ -12,7 +30,9 @@ function ResultView({ result, humanHours, repo }: { result: EstimateResult; huma
     result.basedOnNSessions > 0
       ? `${result.basedOnNSessions} scanned sessions`
       : "Default multipliers";
-  const tokensInfo = result.avgTokensPerMin ? `${result.avgTokensPerMin} tokens/min avg` : "N/A";
+  const tokensInfo = result.avgTokensPerMin
+    ? `${result.avgTokensPerMin} tokens/min avg`
+    : "N/A";
 
   const repoSection = repo
     ? `
@@ -61,13 +81,20 @@ ${repoSection}
 }
 
 export default function EstimateProject() {
-  const [result, setResult] = useState<{ estimate: EstimateResult; humanHours: number; repo?: EnrichedRepo } | null>(null);
+  const [result, setResult] = useState<{
+    estimate: EstimateResult;
+    humanHours: number;
+    repo?: EnrichedRepo;
+  } | null>(null);
   const [repos, setRepos] = useState<EnrichedRepo[]>([]);
 
   useEffect(() => {
     (async () => {
       try {
-        const [rawRepos, projects] = await Promise.all([scanRepos(), getProjectStats()]);
+        const [rawRepos, projects] = await Promise.all([
+          scanRepos(),
+          getProjectStats(),
+        ]);
         setRepos(matchReposToSessions(rawRepos, projects));
       } catch {
         // gh CLI not available or not authenticated — no repos shown
@@ -88,14 +115,28 @@ export default function EstimateProject() {
 
     if (isNaN(humanHours) || humanHours <= 0) return;
 
-    const selectedRepo = values.githubRepo ? repos.find((r) => `${r.owner}/${r.name}` === values.githubRepo) : undefined;
+    const selectedRepo = values.githubRepo
+      ? repos.find((r) => `${r.owner}/${r.name}` === values.githubRepo)
+      : undefined;
 
-    const estimate = await estimateProject(humanHours, values.taskType, values.model, subAgents, values.confidence);
+    const estimate = await estimateProject(
+      humanHours,
+      values.taskType,
+      values.model,
+      subAgents,
+      values.confidence,
+    );
     setResult({ estimate, humanHours, repo: selectedRepo });
   }
 
   if (result) {
-    return <ResultView result={result.estimate} humanHours={result.humanHours} repo={result.repo} />;
+    return (
+      <ResultView
+        result={result.estimate}
+        humanHours={result.humanHours}
+        repo={result.repo}
+      />
+    );
   }
 
   return (
@@ -106,7 +147,11 @@ export default function EstimateProject() {
         </ActionPanel>
       }
     >
-      <Form.TextField id="humanEstimateHours" title="Human Estimate (hours)" placeholder="e.g. 40" />
+      <Form.TextField
+        id="humanEstimateHours"
+        title="Human Estimate (hours)"
+        placeholder="e.g. 40"
+      />
       <Form.Dropdown id="taskType" title="Task Type">
         <Form.Dropdown.Item value="greenfield" title="Greenfield" />
         <Form.Dropdown.Item value="refactoring" title="Refactoring" />
@@ -120,7 +165,12 @@ export default function EstimateProject() {
         <Form.Dropdown.Item value="opus" title="Opus" />
         <Form.Dropdown.Item value="haiku" title="Haiku" />
       </Form.Dropdown>
-      <Form.TextField id="subAgents" title="Sub-Agents" placeholder="e.g. 3" defaultValue="1" />
+      <Form.TextField
+        id="subAgents"
+        title="Sub-Agents"
+        placeholder="e.g. 3"
+        defaultValue="1"
+      />
       <Form.Dropdown id="confidence" title="Confidence">
         <Form.Dropdown.Item value="high" title="High (+20% buffer)" />
         <Form.Dropdown.Item value="medium" title="Medium (+50% buffer)" />

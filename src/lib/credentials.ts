@@ -18,18 +18,29 @@ export function expandHome(filePath: string): string {
  * This avoids here-string escaping issues with inline -Command.
  */
 function runPowerShellScript(script: string, timeoutMs = 10000): string | null {
-  const tmpFile = path.join(os.tmpdir(), `openusage_${Date.now()}_${Math.random().toString(36).slice(2)}.ps1`);
+  const tmpFile = path.join(
+    os.tmpdir(),
+    `openusage_${Date.now()}_${Math.random().toString(36).slice(2)}.ps1`,
+  );
   try {
     fs.writeFileSync(tmpFile, script, "utf-8");
     const result = execSync(
       `powershell -NoProfile -ExecutionPolicy Bypass -File "${tmpFile}"`,
-      { encoding: "utf-8", timeout: timeoutMs, stdio: ["pipe", "pipe", "pipe"] }
+      {
+        encoding: "utf-8",
+        timeout: timeoutMs,
+        stdio: ["pipe", "pipe", "pipe"],
+      },
     );
     return result.trim() || null;
   } catch {
     return null;
   } finally {
-    try { fs.unlinkSync(tmpFile); } catch { /* ignore */ }
+    try {
+      fs.unlinkSync(tmpFile);
+    } catch {
+      /* ignore */
+    }
   }
 }
 
@@ -119,13 +130,16 @@ public class CredWriter {
  * - Windows: uses PowerShell temp file + advapi32 CredRead via P/Invoke
  * Returns the stored password string, or null if not found.
  */
-export function readKeyringPassword(service: string, account: string): string | null {
+export function readKeyringPassword(
+  service: string,
+  account: string,
+): string | null {
   try {
     if (process.platform === "darwin") {
       // macOS Keychain
       const result = execSync(
         `security find-generic-password -s ${JSON.stringify(service)} -a ${JSON.stringify(account)} -w`,
-        { encoding: "utf-8", timeout: 5000, stdio: ["pipe", "pipe", "pipe"] }
+        { encoding: "utf-8", timeout: 5000, stdio: ["pipe", "pipe", "pipe"] },
       );
       return result.trim() || null;
     }
@@ -134,7 +148,8 @@ export function readKeyringPassword(service: string, account: string): string | 
       // Windows Credential Manager via advapi32 CredRead
       // The Rust `keyring` crate stores with target format: "{account}@{service}"
       const target = `${account}@${service}`;
-      const script = CRED_READ_CS + `[CredManager]::Read('${target.replace(/'/g, "''")}')`;
+      const script =
+        CRED_READ_CS + `[CredManager]::Read('${target.replace(/'/g, "''")}')`;
       return runPowerShellScript(script);
     }
 
@@ -149,21 +164,25 @@ export function readKeyringPassword(service: string, account: string): string | 
  * - macOS: uses `security add-generic-password`
  * - Windows: uses PowerShell temp file + advapi32 CredWrite via P/Invoke
  */
-export function writeKeyringPassword(service: string, account: string, password: string): boolean {
+export function writeKeyringPassword(
+  service: string,
+  account: string,
+  password: string,
+): boolean {
   try {
     if (process.platform === "darwin") {
       // Delete existing, then add new
       try {
         execSync(
           `security delete-generic-password -s ${JSON.stringify(service)} -a ${JSON.stringify(account)}`,
-          { stdio: ["pipe", "pipe", "pipe"], timeout: 5000 }
+          { stdio: ["pipe", "pipe", "pipe"], timeout: 5000 },
         );
       } catch {
         // Ignore — may not exist
       }
       execSync(
         `security add-generic-password -s ${JSON.stringify(service)} -a ${JSON.stringify(account)} -w ${JSON.stringify(password)}`,
-        { stdio: ["pipe", "pipe", "pipe"], timeout: 5000 }
+        { stdio: ["pipe", "pipe", "pipe"], timeout: 5000 },
       );
       return true;
     }
@@ -171,7 +190,9 @@ export function writeKeyringPassword(service: string, account: string, password:
     if (process.platform === "win32") {
       const target = `${account}@${service}`;
       const escaped = password.replace(/'/g, "''");
-      const script = CRED_WRITE_CS + `[CredWriter]::Write('${target.replace(/'/g, "''")}', '${account.replace(/'/g, "''")}', '${escaped}')`;
+      const script =
+        CRED_WRITE_CS +
+        `[CredWriter]::Write('${target.replace(/'/g, "''")}', '${account.replace(/'/g, "''")}', '${escaped}')`;
       const result = runPowerShellScript(script);
       return result !== null;
     }
@@ -185,7 +206,9 @@ export function writeKeyringPassword(service: string, account: string, password:
 /**
  * Read and parse a JSON credentials file. Returns null if not found or invalid.
  */
-export function readJsonFile<T = Record<string, unknown>>(filePath: string): T | null {
+export function readJsonFile<T = Record<string, unknown>>(
+  filePath: string,
+): T | null {
   const resolved = expandHome(filePath);
   try {
     if (!fs.existsSync(resolved)) {

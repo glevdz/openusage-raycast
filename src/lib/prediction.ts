@@ -13,7 +13,10 @@ const REGRESSION_WINDOW = 12; // last ~12 snapshots (~1 hour at 5-min intervals)
 /**
  * Simple linear regression: returns slope (change per ms) and intercept.
  */
-function linearRegression(points: { x: number; y: number }[]): { slope: number; intercept: number } {
+function linearRegression(points: { x: number; y: number }[]): {
+  slope: number;
+  intercept: number;
+} {
   const n = points.length;
   let sumX = 0,
     sumY = 0,

@@ -28,13 +28,13 @@ export async function probeAll(): Promise<ProviderWithResult[]> {
           } as ProbeResult,
         };
       }
-    })
+    }),
   );
 
   return results
     .filter(
       (r): r is PromiseFulfilledResult<ProviderWithResult> =>
-        r.status === "fulfilled"
+        r.status === "fulfilled",
     )
     .map((r) => r.value);
 }

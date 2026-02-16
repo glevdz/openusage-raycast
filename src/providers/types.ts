@@ -3,7 +3,10 @@ export interface ProgressLine {
   label: string;
   used: number;
   limit: number;
-  format: { kind: "percent" } | { kind: "dollars" } | { kind: "count"; suffix: string };
+  format:
+    | { kind: "percent" }
+    | { kind: "dollars" }
+    | { kind: "count"; suffix: string };
   resetsAt?: string; // ISO 8601
   periodDurationMs?: number;
 }

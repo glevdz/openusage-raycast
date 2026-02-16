@@ -21,7 +21,11 @@ export function formatDollars(value: number): string {
 /**
  * Format a count with suffix.
  */
-export function formatCount(used: number, limit: number, suffix: string): string {
+export function formatCount(
+  used: number,
+  limit: number,
+  suffix: string,
+): string {
   return `${Math.round(used)}/${Math.round(limit)} ${suffix}`;
 }
 
@@ -98,7 +102,7 @@ export function getUsagePercent(line: ProgressLine): number {
  * Get the highest usage percentage from all provider results.
  */
 export function getHighestUsage(
-  results: Array<{ lines: MetricLine[] }>
+  results: Array<{ lines: MetricLine[] }>,
 ): { percent: number; label: string } | null {
   let highest: { percent: number; label: string } | null = null;
 
@@ -166,9 +170,7 @@ export function getPaceIcon(paceLabel: PaceLabel): Icon {
  * Title-case a string (for plan labels).
  */
 export function titleCase(str: string): string {
-  return str
-    .toLowerCase()
-    .replace(/\b[a-z]/g, (c) => c.toUpperCase());
+  return str.toLowerCase().replace(/\b[a-z]/g, (c) => c.toUpperCase());
 }
 
 /**
@@ -176,8 +178,6 @@ export function titleCase(str: string): string {
  */
 export function formatPlanLabel(raw: string): string {
   // Common patterns: "pro", "plus", "max_plus", "LEVEL_PREMIUM"
-  const cleaned = raw
-    .replace(/^LEVEL_/, "")
-    .replace(/_/g, " ");
+  const cleaned = raw.replace(/^LEVEL_/, "").replace(/_/g, " ");
   return titleCase(cleaned);
 }

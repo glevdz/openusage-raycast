@@ -93,7 +93,10 @@ interface SessionMessage {
   };
 }
 
-function parseSession(sessionFile: string, projectPath: string): SessionMetric | null {
+function parseSession(
+  sessionFile: string,
+  projectPath: string,
+): SessionMetric | null {
   const records = readJsonlFile(sessionFile) as SessionMessage[];
   if (records.length === 0) return null;
 
@@ -248,7 +251,9 @@ export async function scanSessions(): Promise<SessionMetric[]> {
   }
 
   const allSessions = [...cached, ...newSessions];
-  allSessions.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
+  allSessions.sort(
+    (a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime(),
+  );
 
   await LocalStorage.setItem(CACHE_KEY, JSON.stringify(allSessions));
   await LocalStorage.setItem(CACHE_TS_KEY, String(Date.now()));
@@ -296,7 +301,10 @@ export async function getAggregateStats(): Promise<AggregateStats> {
   }
 
   const totalInputTokens = sessions.reduce((s, m) => s + m.totalInputTokens, 0);
-  const totalOutputTokens = sessions.reduce((s, m) => s + m.totalOutputTokens, 0);
+  const totalOutputTokens = sessions.reduce(
+    (s, m) => s + m.totalOutputTokens,
+    0,
+  );
 
   const projectCounts: Record<string, number> = {};
   for (const s of sessions) {
@@ -339,8 +347,13 @@ export async function getProjectStats(): Promise<ProjectStats[]> {
     for (const s of group) {
       modelCounts[s.model] = (modelCounts[s.model] ?? 0) + 1;
     }
-    const mostUsedModel = Object.entries(modelCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "unknown";
-    const lastActive = group.map((s) => s.endedAt).sort().reverse()[0];
+    const mostUsedModel =
+      Object.entries(modelCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ??
+      "unknown";
+    const lastActive = group
+      .map((s) => s.endedAt)
+      .sort()
+      .reverse()[0];
 
     stats.push({
       project,
@@ -354,7 +367,10 @@ export async function getProjectStats(): Promise<ProjectStats[]> {
     });
   }
 
-  stats.sort((a, b) => new Date(b.lastActive).getTime() - new Date(a.lastActive).getTime());
+  stats.sort(
+    (a, b) =>
+      new Date(b.lastActive).getTime() - new Date(a.lastActive).getTime(),
+  );
   return stats;
 }
 

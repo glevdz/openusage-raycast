@@ -3,7 +3,11 @@ import { LocalStorage, showHUD } from "@raycast/api";
 const ALERT_KEY_PREFIX = "openusage:alerts:";
 const THRESHOLDS = [50, 75, 90] as const;
 
-function alertKey(providerId: string, lineLabel: string, resetsAt: string): string {
+function alertKey(
+  providerId: string,
+  lineLabel: string,
+  resetsAt: string,
+): string {
   return `${ALERT_KEY_PREFIX}${providerId}:${lineLabel}:${resetsAt}`;
 }
 
@@ -61,7 +65,7 @@ async function pruneExpiredAlerts(): Promise<void> {
   const allItems = await LocalStorage.allItems();
   const now = Date.now();
 
-  for (const [key, value] of Object.entries(allItems)) {
+  for (const key of Object.keys(allItems)) {
     if (!key.startsWith(ALERT_KEY_PREFIX)) continue;
 
     // Extract resetsAt from key: prefix:providerId:lineLabel:resetsAt

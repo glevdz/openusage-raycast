@@ -1,5 +1,10 @@
 import type { Provider, ProbeResult, MetricLine } from "./types";
-import { readJsonFile, writeJsonFile, readKeyringPassword, writeKeyringPassword } from "../lib/credentials";
+import {
+  readJsonFile,
+  writeJsonFile,
+  readKeyringPassword,
+  writeKeyringPassword,
+} from "../lib/credentials";
 import { refreshTokenForm } from "../lib/oauth";
 
 const CRED_PATH = "~/.kimi/credentials/kimi-code.json";
@@ -113,7 +118,7 @@ function parseWindowPeriodMs(window?: LimitWindow): number | null {
 }
 
 function parseQuota(
-  row: LimitDetail | LimitItem | undefined
+  row: LimitDetail | LimitItem | undefined,
 ): { used: number; limit: number; resetsAt?: string } | null {
   if (!row) return null;
 
@@ -133,14 +138,19 @@ function parseQuota(
     used,
     limit,
     resetsAt: toIso(
-      row.resetTime ?? (row as LimitDetail).reset_at ?? (row as LimitDetail).resetAt ?? (row as LimitDetail).reset_time
+      row.resetTime ??
+        (row as LimitDetail).reset_at ??
+        (row as LimitDetail).resetAt ??
+        (row as LimitDetail).reset_time,
     ),
   };
 }
 
-function toPercentUsage(
-  quota: { used: number; limit: number; resetsAt?: string }
-): { used: number; limit: number; resetsAt?: string } | null {
+function toPercentUsage(quota: {
+  used: number;
+  limit: number;
+  resetsAt?: string;
+}): { used: number; limit: number; resetsAt?: string } | null {
   if (quota.limit <= 0) return null;
   const usedPercent = (quota.used / quota.limit) * 100;
   if (!Number.isFinite(usedPercent)) return null;
@@ -171,7 +181,8 @@ function pickSessionCandidate(candidates: Candidate[]): Candidate | null {
   const sorted = [...candidates].sort((a, b) => {
     const aKnown = typeof a.periodMs === "number";
     const bKnown = typeof b.periodMs === "number";
-    if (aKnown && bKnown) return (a.periodMs as number) - (b.periodMs as number);
+    if (aKnown && bKnown)
+      return (a.periodMs as number) - (b.periodMs as number);
     if (aKnown) return -1;
     if (bKnown) return 1;
     return 0;
@@ -211,7 +222,10 @@ function needsRefresh(creds: KimiCredentials): boolean {
 /** Where did we load credentials from? Determines where to persist after refresh. */
 type CredSource = "file" | "keyring";
 
-async function doRefresh(creds: KimiCredentials, source: CredSource): Promise<string | null> {
+async function doRefresh(
+  creds: KimiCredentials,
+  source: CredSource,
+): Promise<string | null> {
   if (!creds.refresh_token) return null;
 
   const result = await refreshTokenForm({
@@ -230,7 +244,11 @@ async function doRefresh(creds: KimiCredentials, source: CredSource): Promise<st
 
   // Persist back to the same source
   if (source === "keyring") {
-    writeKeyringPassword(KEYRING_SERVICE, KEYRING_ACCOUNT, JSON.stringify(creds));
+    writeKeyringPassword(
+      KEYRING_SERVICE,
+      KEYRING_ACCOUNT,
+      JSON.stringify(creds),
+    );
   } else {
     writeJsonFile(CRED_PATH, creds);
   }
@@ -240,7 +258,10 @@ async function doRefresh(creds: KimiCredentials, source: CredSource): Promise<st
 /**
  * Load credentials. Tries JSON file first, then OS keyring.
  */
-function loadCredentials(): { creds: KimiCredentials; source: CredSource } | null {
+function loadCredentials(): {
+  creds: KimiCredentials;
+  source: CredSource;
+} | null {
   // 1. Try JSON file
   const fileCreds = readJsonFile<KimiCredentials>(CRED_PATH);
   if (fileCreds && (fileCreds.access_token || fileCreds.refresh_token)) {
@@ -266,7 +287,10 @@ function loadCredentials(): { creds: KimiCredentials; source: CredSource } | nul
 async function probe(): Promise<ProbeResult> {
   const loaded = loadCredentials();
   if (!loaded) {
-    return { lines: [], error: "Not logged in. Run `kimi login` to authenticate." };
+    return {
+      lines: [],
+      error: "Not logged in. Run `kimi login` to authenticate.",
+    };
   }
 
   const { creds, source } = loaded;
@@ -279,11 +303,17 @@ async function probe(): Promise<ProbeResult> {
       if (refreshed) {
         accessToken = refreshed;
       } else if (!accessToken) {
-        return { lines: [], error: "Token refresh failed and no access token available." };
+        return {
+          lines: [],
+          error: "Token refresh failed and no access token available.",
+        };
       }
     } catch (e) {
       if (!accessToken) {
-        return { lines: [], error: `Token refresh failed: ${e instanceof Error ? e.message : String(e)}` };
+        return {
+          lines: [],
+          error: `Token refresh failed: ${e instanceof Error ? e.message : String(e)}`,
+        };
       }
     }
   }
@@ -300,7 +330,10 @@ async function probe(): Promise<ProbeResult> {
       },
     });
   } catch (e) {
-    return { lines: [], error: `Network error: ${e instanceof Error ? e.message : String(e)}` };
+    return {
+      lines: [],
+      error: `Network error: ${e instanceof Error ? e.message : String(e)}`,
+    };
   }
 
   // Retry once on 401
@@ -319,12 +352,18 @@ async function probe(): Promise<ProbeResult> {
         });
       }
     } catch (e) {
-      return { lines: [], error: `Token refresh failed: ${e instanceof Error ? e.message : String(e)}` };
+      return {
+        lines: [],
+        error: `Token refresh failed: ${e instanceof Error ? e.message : String(e)}`,
+      };
     }
   }
 
   if (resp.status === 401 || resp.status === 403) {
-    return { lines: [], error: `Auth failed (HTTP ${resp.status}). Token may be expired.` };
+    return {
+      lines: [],
+      error: `Auth failed (HTTP ${resp.status}). Token may be expired.`,
+    };
   }
 
   if (!resp.ok) {
@@ -343,7 +382,9 @@ async function probe(): Promise<ProbeResult> {
   const sessionCandidate = pickSessionCandidate(candidates);
 
   let weeklyCandidate: Candidate | null = null;
-  const usageQuota = data.usage ? parseQuota(data.usage as unknown as LimitDetail) : null;
+  const usageQuota = data.usage
+    ? parseQuota(data.usage as unknown as LimitDetail)
+    : null;
   if (usageQuota) {
     weeklyCandidate = { quota: usageQuota, periodMs: null };
   } else {
@@ -361,7 +402,10 @@ async function probe(): Promise<ProbeResult> {
         limit: sessionPercent.limit,
         format: { kind: "percent" },
         resetsAt: sessionPercent.resetsAt,
-        periodDurationMs: typeof sessionCandidate.periodMs === "number" ? sessionCandidate.periodMs : undefined,
+        periodDurationMs:
+          typeof sessionCandidate.periodMs === "number"
+            ? sessionCandidate.periodMs
+            : undefined,
       });
     }
   }
@@ -376,13 +420,21 @@ async function probe(): Promise<ProbeResult> {
         limit: weeklyPercent.limit,
         format: { kind: "percent" },
         resetsAt: weeklyPercent.resetsAt,
-        periodDurationMs: typeof weeklyCandidate.periodMs === "number" ? weeklyCandidate.periodMs : undefined,
+        periodDurationMs:
+          typeof weeklyCandidate.periodMs === "number"
+            ? weeklyCandidate.periodMs
+            : undefined,
       });
     }
   }
 
   if (lines.length === 0) {
-    lines.push({ type: "badge", label: "Status", text: "No usage data", color: "#a3a3a3" });
+    lines.push({
+      type: "badge",
+      label: "Status",
+      text: "No usage data",
+      color: "#a3a3a3",
+    });
   }
 
   return {

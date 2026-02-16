@@ -1,6 +1,6 @@
 import { LocalStorage } from "@raycast/api";
 import { execSync } from "child_process";
-import type { SessionMetric, ProjectStats } from "./velocity";
+import type { ProjectStats } from "./velocity";
 
 // ── Data Model ───────────────────────────────────────────────────────
 
@@ -105,7 +105,7 @@ export async function scanRepos(): Promise<RepoMetric[]> {
 
   // Fetch repo list
   const raw = execGh(
-    'repo list --limit 50 --json name,owner,url,primaryLanguage,languages,diskUsage,pushedAt,createdAt',
+    "repo list --limit 50 --json name,owner,url,primaryLanguage,languages,diskUsage,pushedAt,createdAt",
   );
   if (!raw) return cachedRaw ? (JSON.parse(cachedRaw) as RepoMetric[]) : [];
 
@@ -143,7 +143,9 @@ export async function scanRepos(): Promise<RepoMetric[]> {
   });
 
   // Sort by most recently pushed
-  repos.sort((a, b) => new Date(b.pushedAt).getTime() - new Date(a.pushedAt).getTime());
+  repos.sort(
+    (a, b) => new Date(b.pushedAt).getTime() - new Date(a.pushedAt).getTime(),
+  );
 
   // Cache
   await LocalStorage.setItem(CACHE_KEY, JSON.stringify(repos));
@@ -163,7 +165,11 @@ export function matchReposToSessions(
     const repoLower = repo.name.toLowerCase();
     const matched = projects.find((p) => {
       const projLower = p.projectName.toLowerCase();
-      return projLower === repoLower || projLower.includes(repoLower) || repoLower.includes(projLower);
+      return (
+        projLower === repoLower ||
+        projLower.includes(repoLower) ||
+        repoLower.includes(projLower)
+      );
     });
     return { ...repo, matchedProject: matched ?? null };
   });
@@ -172,24 +178,31 @@ export function matchReposToSessions(
 /**
  * Generate a complexity-based estimate for a repo.
  */
-export function getRepoEstimate(
-  repo: EnrichedRepo,
-): RepoEstimate {
+export function getRepoEstimate(repo: EnrichedRepo): RepoEstimate {
   // Complexity score: 0-1 based on size, languages, and activity
   const langCount = Object.keys(repo.languages).length;
   const sizeScore = Math.min(repo.sizeKB / 100_000, 1); // 100MB = 1.0
   const langScore = Math.min(langCount / 10, 1); // 10 languages = 1.0
   const activityScore = Math.min(repo.commitVelocity / 20, 1); // 20 commits/week = 1.0
-  const complexityScore = Math.round((sizeScore * 0.4 + langScore * 0.3 + activityScore * 0.3) * 100) / 100;
+  const complexityScore =
+    Math.round(
+      (sizeScore * 0.4 + langScore * 0.3 + activityScore * 0.3) * 100,
+    ) / 100;
 
   if (repo.matchedProject) {
     // Use actual session data
-    const avgSessionMin = repo.matchedProject.totalDurationMin / repo.matchedProject.sessions;
-    const estimatedSessionsRemaining = Math.max(1, Math.ceil(complexityScore * 10));
+    const avgSessionMin =
+      repo.matchedProject.totalDurationMin / repo.matchedProject.sessions;
+    const estimatedSessionsRemaining = Math.max(
+      1,
+      Math.ceil(complexityScore * 10),
+    );
     return {
       complexityScore,
       estimatedSessionsRemaining,
-      estimatedMinutesRemaining: Math.round(avgSessionMin * estimatedSessionsRemaining),
+      estimatedMinutesRemaining: Math.round(
+        avgSessionMin * estimatedSessionsRemaining,
+      ),
       basedOnSessions: true,
     };
   }

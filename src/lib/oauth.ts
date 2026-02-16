@@ -37,7 +37,10 @@ export async function refreshTokenJson(params: {
   });
 
   if (resp.status === 400 || resp.status === 401) {
-    const data = (await resp.json().catch(() => null)) as Record<string, string> | null;
+    const data = (await resp.json().catch(() => null)) as Record<
+      string,
+      string
+    > | null;
     const errorCode = data?.error || data?.error_description || "";
     if (errorCode === "invalid_grant") {
       throw new Error("Session expired. Please re-authenticate.");
@@ -89,7 +92,10 @@ export async function refreshTokenForm(params: {
   });
 
   if (resp.status === 400 || resp.status === 401) {
-    const data = (await resp.json().catch(() => null)) as Record<string, unknown> | null;
+    const data = (await resp.json().catch(() => null)) as Record<
+      string,
+      unknown
+    > | null;
     const code =
       (data?.error as Record<string, string>)?.code ||
       (data?.error as string) ||

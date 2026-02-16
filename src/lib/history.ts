@@ -17,8 +17,13 @@ function storageKey(providerId: string, lineLabel: string): string {
 /**
  * Load snapshots for a given provider + metric line.
  */
-export async function getSnapshots(providerId: string, lineLabel: string): Promise<UsageSnapshot[]> {
-  const raw = await LocalStorage.getItem<string>(storageKey(providerId, lineLabel));
+export async function getSnapshots(
+  providerId: string,
+  lineLabel: string,
+): Promise<UsageSnapshot[]> {
+  const raw = await LocalStorage.getItem<string>(
+    storageKey(providerId, lineLabel),
+  );
   if (!raw) return [];
   try {
     return JSON.parse(raw) as UsageSnapshot[];
@@ -40,7 +45,12 @@ export async function addSnapshot(
   let snapshots = await getSnapshots(providerId, lineLabel);
 
   // If resetsAt changed, the billing window rolled over — clear history
-  if (resetsAt && snapshots.length > 0 && snapshots[0].resetsAt && snapshots[0].resetsAt !== resetsAt) {
+  if (
+    resetsAt &&
+    snapshots.length > 0 &&
+    snapshots[0].resetsAt &&
+    snapshots[0].resetsAt !== resetsAt
+  ) {
     snapshots = [];
   }
 

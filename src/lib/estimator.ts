@@ -1,6 +1,12 @@
 import { getSessionMetrics } from "./velocity";
 
-export type TaskType = "greenfield" | "refactoring" | "integration" | "architecture" | "documentation" | "testing";
+export type TaskType =
+  | "greenfield"
+  | "refactoring"
+  | "integration"
+  | "architecture"
+  | "documentation"
+  | "testing";
 export type ModelType = "opus" | "sonnet" | "haiku";
 
 const DEFAULT_TASK_MULTIPLIERS: Record<TaskType, number> = {
@@ -74,7 +80,8 @@ export async function estimateProject(
   const subAgentMult = getSubAgentMultiplier(subAgents);
 
   // Combined speedup
-  const speedupFactor = Math.round(baseSpeedup * modelAdjustment * subAgentMult * 10) / 10;
+  const speedupFactor =
+    Math.round(baseSpeedup * modelAdjustment * subAgentMult * 10) / 10;
 
   // Estimated time with confidence buffer
   const buffer = getConfidenceBuffer(confidence);

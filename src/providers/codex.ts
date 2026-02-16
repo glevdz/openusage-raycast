@@ -76,7 +76,7 @@ function needsRefresh(auth: CodexAuth): boolean {
 
 async function doRefresh(
   auth: CodexAuth,
-  authPath: string | null
+  authPath: string | null,
 ): Promise<string | null> {
   if (!auth.tokens?.refresh_token) return null;
 
@@ -122,7 +122,10 @@ function toIso(value: unknown): string | undefined {
   return undefined;
 }
 
-function getResetsAtIso(nowSec: number, window?: RateWindow): string | undefined {
+function getResetsAtIso(
+  nowSec: number,
+  window?: RateWindow,
+): string | undefined {
   if (!window) return undefined;
   if (typeof window.reset_at === "number") {
     return toIso(window.reset_at);
@@ -188,7 +191,10 @@ async function probe(): Promise<ProbeResult> {
         resp = await fetch(USAGE_URL, { method: "GET", headers });
       }
     } catch {
-      return { lines: [], error: "Token expired. Run `codex` to log in again." };
+      return {
+        lines: [],
+        error: "Token expired. Run `codex` to log in again.",
+      };
     }
   }
 
@@ -215,8 +221,12 @@ async function probe(): Promise<ProbeResult> {
   const reviewWindow = data.code_review_rate_limit?.primary_window;
 
   // Try headers first
-  const headerPrimary = readPercent(resp.headers.get("x-codex-primary-used-percent"));
-  const headerSecondary = readPercent(resp.headers.get("x-codex-secondary-used-percent"));
+  const headerPrimary = readPercent(
+    resp.headers.get("x-codex-primary-used-percent"),
+  );
+  const headerSecondary = readPercent(
+    resp.headers.get("x-codex-secondary-used-percent"),
+  );
 
   if (headerPrimary !== null) {
     lines.push({
@@ -282,7 +292,9 @@ async function probe(): Promise<ProbeResult> {
   }
 
   // Credits — only show if user actually has some
-  const creditsBalance = readNumber(resp.headers.get("x-codex-credits-balance"));
+  const creditsBalance = readNumber(
+    resp.headers.get("x-codex-credits-balance"),
+  );
   const creditsData = data.credits ? readNumber(data.credits.balance) : null;
   const creditsRemaining = creditsBalance ?? creditsData;
   if (creditsRemaining !== null && creditsRemaining > 0) {
@@ -299,7 +311,12 @@ async function probe(): Promise<ProbeResult> {
   }
 
   if (lines.length === 0) {
-    lines.push({ type: "badge", label: "Status", text: "No usage data", color: "#a3a3a3" });
+    lines.push({
+      type: "badge",
+      label: "Status",
+      text: "No usage data",
+      color: "#a3a3a3",
+    });
   }
 
   return { plan, lines };
