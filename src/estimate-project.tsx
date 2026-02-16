@@ -13,15 +13,18 @@ import {
   type EnrichedRepo,
 } from "./lib/github";
 import { getProjectStats } from "./lib/velocity";
+import { estimateSessionCarbon } from "./lib/carbon";
 
 function ResultView({
   result,
   humanHours,
   repo,
+  carbonG,
 }: {
   result: EstimateResult;
   humanHours: number;
   repo?: EnrichedRepo;
+  carbonG?: number;
 }) {
   const hours = Math.floor(result.estimatedMinutes / 60);
   const mins = result.estimatedMinutes % 60;
@@ -62,7 +65,7 @@ ${repo.matchedProject ? `| **Matched Sessions** | ${repo.matchedProject.sessions
 | **Confidence** | ${result.confidence} (+${result.confidence === "high" ? "20" : result.confidence === "medium" ? "50" : "100"}% buffer) |
 | **Data Source** | ${source} |
 | **Avg Output Rate** | ${tokensInfo} |
-${repoSection}
+${carbonG !== undefined ? `| **Projected CO2** | ${carbonG >= 1000 ? `${(carbonG / 1000).toFixed(2)} kg` : `${carbonG.toFixed(1)} g`} |\n` : ""}${repoSection}
   `.trim();
 
   return (
@@ -85,6 +88,7 @@ export default function EstimateProject() {
     estimate: EstimateResult;
     humanHours: number;
     repo?: EnrichedRepo;
+    carbonG?: number;
   } | null>(null);
   const [repos, setRepos] = useState<EnrichedRepo[]>([]);
 
@@ -126,7 +130,18 @@ export default function EstimateProject() {
       subAgents,
       values.confidence,
     );
-    setResult({ estimate, humanHours, repo: selectedRepo });
+
+    // Fetch projected carbon for the estimated AI time
+    const carbonEstimate = await estimateSessionCarbon(
+      estimate.estimatedMinutes,
+    );
+
+    setResult({
+      estimate,
+      humanHours,
+      repo: selectedRepo,
+      carbonG: carbonEstimate?.emissionsG,
+    });
   }
 
   if (result) {
@@ -135,6 +150,7 @@ export default function EstimateProject() {
         result={result.estimate}
         humanHours={result.humanHours}
         repo={result.repo}
+        carbonG={result.carbonG}
       />
     );
   }

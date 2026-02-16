@@ -25,6 +25,11 @@ import {
   clearGithubCache,
   type EnrichedRepo,
 } from "./lib/github";
+import {
+  getCarbonSummary,
+  clearCarbonCache,
+  type CarbonSummary,
+} from "./lib/carbon";
 import { probeAll, type ProviderWithResult } from "./providers";
 import { setCachedResult } from "./lib/cache";
 import {
@@ -436,6 +441,66 @@ function LiveUsageDetail({ result }: { result: ProviderWithResult }) {
   );
 }
 
+function CarbonDetail({ carbon }: { carbon: CarbonSummary }) {
+  const drivingKm = carbon.equivalents.drivingMeters / 1000;
+  return (
+    <List.Item.Detail
+      metadata={
+        <List.Item.Detail.Metadata>
+          <List.Item.Detail.Metadata.Label
+            title="Total CO2"
+            text={
+              carbon.totalEmissionsKg >= 1
+                ? `${carbon.totalEmissionsKg.toFixed(2)} kg`
+                : `${carbon.totalEmissionsG.toFixed(1)} g`
+            }
+          />
+          <List.Item.Detail.Metadata.Label
+            title="Total Energy"
+            text={`${carbon.totalEnergyKwh.toFixed(4)} kWh`}
+          />
+          <List.Item.Detail.Metadata.Label
+            title="Per Session Avg"
+            text={`${carbon.avgPerSessionG.toFixed(2)} g CO2`}
+          />
+          <List.Item.Detail.Metadata.Label
+            title="Sessions Measured"
+            text={String(carbon.sessionCount)}
+          />
+          <List.Item.Detail.Metadata.Separator />
+          <List.Item.Detail.Metadata.Label title="Equivalents" />
+          <List.Item.Detail.Metadata.Label
+            title="  Tree absorption"
+            text={`${carbon.equivalents.treeHours.toFixed(1)} hours`}
+          />
+          <List.Item.Detail.Metadata.Label
+            title="  Smartphone charges"
+            text={`${carbon.equivalents.smartphoneCharges.toFixed(1)}`}
+          />
+          <List.Item.Detail.Metadata.Label
+            title="  Driving equivalent"
+            text={
+              drivingKm >= 1
+                ? `${drivingKm.toFixed(1)} km`
+                : `${carbon.equivalents.drivingMeters.toFixed(0)} m`
+            }
+          />
+          <List.Item.Detail.Metadata.Separator />
+          <List.Item.Detail.Metadata.Label
+            title="Grid Intensity"
+            text="~350 g CO2/kWh (us-west-2)"
+          />
+          <List.Item.Detail.Metadata.Label
+            title="Provider"
+            text="Anthropic (us-west-2)"
+          />
+          <List.Item.Detail.Metadata.Label title="Source" text="greenai.info" />
+        </List.Item.Detail.Metadata>
+      }
+    />
+  );
+}
+
 // ── Main Command ─────────────────────────────────────────────────────
 
 export default function VelocityDashboard() {
@@ -449,6 +514,8 @@ export default function VelocityDashboard() {
           probeAll(),
           scanRepos(),
         ]);
+
+      const carbon = await getCarbonSummary(sessions);
 
       // Update provider cache
       for (const { provider, result } of providerResults) {
@@ -486,6 +553,7 @@ export default function VelocityDashboard() {
         projects,
         providers: providersWithPredictions,
         repos: enrichedRepos,
+        carbon,
       };
     },
     [],
@@ -497,9 +565,14 @@ export default function VelocityDashboard() {
   const projects = data?.projects ?? [];
   const providers = data?.providers ?? [];
   const repos = data?.repos ?? [];
+  const carbon = data?.carbon ?? null;
 
   async function handleRefresh() {
-    await Promise.all([clearVelocityCache(), clearGithubCache()]);
+    await Promise.all([
+      clearVelocityCache(),
+      clearGithubCache(),
+      clearCarbonCache(),
+    ]);
     await showToast({
       style: Toast.Style.Animated,
       title: "Re-scanning sessions & repos...",
@@ -605,6 +678,31 @@ export default function VelocityDashboard() {
               },
             ]}
             detail={<OverviewDetail stats={stats} />}
+            actions={defaultActions}
+          />
+        </List.Section>
+      )}
+
+      {/* Section: Carbon Impact */}
+      {carbon && (
+        <List.Section title="Carbon Impact">
+          <List.Item
+            title="Total Emissions"
+            icon={Icon.Leaf}
+            subtitle={
+              carbon.totalEmissionsKg >= 1
+                ? `${carbon.totalEmissionsKg.toFixed(2)} kg CO2`
+                : `${carbon.totalEmissionsG.toFixed(1)} g CO2`
+            }
+            accessories={[
+              {
+                tag: {
+                  value: `${carbon.totalEnergyKwh.toFixed(4)} kWh`,
+                  color: Color.Green,
+                },
+              },
+            ]}
+            detail={<CarbonDetail carbon={carbon} />}
             actions={defaultActions}
           />
         </List.Section>

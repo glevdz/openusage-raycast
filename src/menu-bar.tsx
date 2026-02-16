@@ -15,6 +15,8 @@ import {
 import { addSnapshot, getSnapshots } from "./lib/history";
 import { calculatePrediction, type Prediction } from "./lib/prediction";
 import { checkAndFireAlerts } from "./lib/alerts";
+import { getSessionMetrics } from "./lib/velocity";
+import { getCarbonSummary, type CarbonSummary } from "./lib/carbon";
 
 type PredictionKey = string;
 type PredictionMap = Record<PredictionKey, Prediction>;
@@ -87,7 +89,11 @@ export default function MenuBar() {
         }
       }
 
-      return { results, predictions };
+      // Fetch carbon summary
+      const sessions = await getSessionMetrics();
+      const carbon = await getCarbonSummary(sessions);
+
+      return { results, predictions, carbon };
     },
     [],
     {
@@ -98,6 +104,7 @@ export default function MenuBar() {
 
   const results: ProviderWithResult[] = data?.results ?? [];
   const predictions: PredictionMap = data?.predictions ?? {};
+  const carbon: CarbonSummary | null = data?.carbon ?? null;
 
   const title = results.length > 0 ? getMenuBarTitle(results) : undefined;
   const icon = results.length > 0 ? getMenuBarIcon(results) : Icon.BarChart;
@@ -156,6 +163,20 @@ export default function MenuBar() {
           )}
         </MenuBarExtra.Section>
       ))}
+
+      {carbon && (
+        <MenuBarExtra.Section title="Carbon Impact">
+          <MenuBarExtra.Item
+            icon={Icon.Leaf}
+            title="Total Emissions"
+            subtitle={
+              carbon.totalEmissionsKg >= 1
+                ? `${carbon.totalEmissionsKg.toFixed(2)} kg CO2`
+                : `${carbon.totalEmissionsG.toFixed(1)} g CO2`
+            }
+          />
+        </MenuBarExtra.Section>
+      )}
 
       <MenuBarExtra.Section>
         <MenuBarExtra.Item
