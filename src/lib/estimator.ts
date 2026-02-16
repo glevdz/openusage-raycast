@@ -1,4 +1,7 @@
-import { getMetrics, type ModelType, type TaskType } from "./velocity";
+import { getSessionMetrics } from "./velocity";
+
+export type TaskType = "greenfield" | "refactoring" | "integration" | "architecture" | "documentation" | "testing";
+export type ModelType = "opus" | "sonnet" | "haiku";
 
 const DEFAULT_TASK_MULTIPLIERS: Record<TaskType, number> = {
   greenfield: 6,
@@ -37,7 +40,8 @@ export interface EstimateResult {
   estimatedMinutes: number;
   speedupFactor: number;
   confidence: "high" | "medium" | "low";
-  basedOnNProjects: number;
+  basedOnNSessions: number;
+  avgTokensPerMin: number | null;
 }
 
 export async function estimateProject(
@@ -45,23 +49,23 @@ export async function estimateProject(
   taskType: TaskType,
   model: ModelType,
   subAgents: number,
-  confidence: "high" | "medium" | "low"
+  confidence: "high" | "medium" | "low",
 ): Promise<EstimateResult> {
-  const metrics = await getMetrics();
-  const matching = metrics.filter((m) => m.taskType === taskType);
+  const sessions = await getSessionMetrics();
 
-  let baseSpeedup: number;
-  let basedOnN: number;
-
-  if (matching.length >= 3) {
-    // Use actual data
-    baseSpeedup = matching.reduce((s, m) => s + m.speedupFactor, 0) / matching.length;
-    basedOnN = matching.length;
-  } else {
-    // Use defaults
-    baseSpeedup = DEFAULT_TASK_MULTIPLIERS[taskType];
-    basedOnN = 0;
+  // Derive data-driven adjustment from real sessions
+  let avgTokensPerMin: number | null = null;
+  if (sessions.length >= 3) {
+    const totalTokens = sessions.reduce((s, m) => s + m.totalOutputTokens, 0);
+    const totalMin = sessions.reduce((s, m) => s + m.durationMin, 0);
+    if (totalMin > 0) {
+      avgTokensPerMin = Math.round(totalTokens / totalMin);
+    }
   }
+
+  // Use default multipliers (no task-type matching since sessions don't have taskType)
+  const baseSpeedup = DEFAULT_TASK_MULTIPLIERS[taskType];
+  const basedOnN = sessions.length;
 
   // Adjust for model speed relative to sonnet baseline
   const modelAdjustment = MODEL_SPEED[model];
@@ -82,6 +86,7 @@ export async function estimateProject(
     estimatedMinutes,
     speedupFactor,
     confidence,
-    basedOnNProjects: basedOnN,
+    basedOnNSessions: basedOnN,
+    avgTokensPerMin,
   };
 }
