@@ -16,7 +16,14 @@ import { addSnapshot, getSnapshots } from "./lib/history";
 import { calculatePrediction, type Prediction } from "./lib/prediction";
 import { checkAndFireAlerts } from "./lib/alerts";
 import { getSessionMetrics } from "./lib/velocity";
-import { getCarbonSummary, type CarbonSummary } from "./lib/carbon";
+import {
+  getCarbonSummary,
+  getCarbonBudgetSetting,
+  getCarbonBudget,
+  type CarbonSummary,
+  type CarbonBudget,
+} from "./lib/carbon";
+import { formatCarbon } from "./lib/formatting";
 
 type PredictionKey = string;
 type PredictionMap = Record<PredictionKey, Prediction>;
@@ -91,9 +98,16 @@ export default function MenuBar() {
 
       // Fetch carbon summary
       const sessions = await getSessionMetrics();
-      const carbon = await getCarbonSummary(sessions);
+      const [carbon, budgetSetting] = await Promise.all([
+        getCarbonSummary(sessions),
+        getCarbonBudgetSetting(),
+      ]);
+      const carbonBudget =
+        carbon && budgetSetting
+          ? getCarbonBudget(sessions, carbon.totalEmissionsG, budgetSetting)
+          : null;
 
-      return { results, predictions, carbon };
+      return { results, predictions, carbon, carbonBudget };
     },
     [],
     {
@@ -105,6 +119,7 @@ export default function MenuBar() {
   const results: ProviderWithResult[] = data?.results ?? [];
   const predictions: PredictionMap = data?.predictions ?? {};
   const carbon: CarbonSummary | null = data?.carbon ?? null;
+  const carbonBudget: CarbonBudget | null = data?.carbonBudget ?? null;
 
   const title = results.length > 0 ? getMenuBarTitle(results) : undefined;
   const icon = results.length > 0 ? getMenuBarIcon(results) : Icon.BarChart;
@@ -168,12 +183,25 @@ export default function MenuBar() {
         <MenuBarExtra.Section title="Carbon Impact">
           <MenuBarExtra.Item
             icon={Icon.Leaf}
-            title="Total Emissions"
-            subtitle={
-              carbon.totalEmissionsKg >= 1
-                ? `${carbon.totalEmissionsKg.toFixed(2)} kg CO2`
-                : `${carbon.totalEmissionsG.toFixed(1)} g CO2`
-            }
+            title="Total"
+            subtitle={`${formatCarbon(carbon.totalEmissionsG)} CO2`}
+          />
+          <MenuBarExtra.Item
+            icon={Icon.Gauge}
+            title="Efficiency"
+            subtitle={`${(carbon.gPer1kTokens ?? 0).toFixed(4)} g/1K tokens`}
+          />
+          {carbonBudget && (
+            <MenuBarExtra.Item
+              icon={carbonBudget.onTrack ? Icon.Checkmark : Icon.Warning}
+              title="Budget"
+              subtitle={`${Math.round(carbonBudget.percentUsed)}% used`}
+            />
+          )}
+          <MenuBarExtra.Item
+            icon={Icon.Mobile}
+            title="Equivalent"
+            subtitle={`~${carbon.equivalents.smartphoneCharges.toFixed(1)} smartphone charges`}
           />
         </MenuBarExtra.Section>
       )}

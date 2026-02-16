@@ -2,6 +2,42 @@ import { Color, Icon } from "@raycast/api";
 import type { MetricLine, ProgressLine } from "../providers/types";
 import type { PaceLabel } from "./prediction";
 
+// ── Carbon Formatting ────────────────────────────────────────────────
+
+/**
+ * Format carbon emissions for display.
+ */
+export function formatCarbon(grams: number): string {
+  if (grams >= 1000) return `${(grams / 1000).toFixed(2)} kg`;
+  return `${grams.toFixed(1)} g`;
+}
+
+/**
+ * Format a carbon rate for display.
+ */
+export function formatCarbonRate(gPerMin: number): string {
+  return `${gPerMin.toFixed(4)} g/min`;
+}
+
+/**
+ * Get a Raycast Color based on carbon budget usage percentage.
+ */
+export function getCarbonColor(percentOfBudget: number): Color {
+  if (percentOfBudget >= 90) return Color.Red;
+  if (percentOfBudget >= 70) return Color.Orange;
+  if (percentOfBudget >= 50) return Color.Yellow;
+  return Color.Green;
+}
+
+/**
+ * Get an icon based on carbon budget usage percentage.
+ */
+export function getCarbonIcon(percentOfBudget: number): Icon {
+  if (percentOfBudget >= 90) return Icon.Warning;
+  if (percentOfBudget >= 50) return Icon.Plant;
+  return Icon.Leaf;
+}
+
 /**
  * Format a usage percentage for display.
  */

@@ -28,7 +28,12 @@ import {
 import {
   getCarbonSummary,
   clearCarbonCache,
+  getCarbonBudget,
+  getCarbonBudgetSetting,
+  getSessionCarbon,
+  exportCarbonReport,
   type CarbonSummary,
+  type CarbonBudget,
 } from "./lib/carbon";
 import { probeAll, type ProviderWithResult } from "./providers";
 import { setCachedResult } from "./lib/cache";
@@ -40,6 +45,8 @@ import {
   getUsageColor,
   getUsagePercent,
   getPaceIcon,
+  formatCarbon,
+  getCarbonColor,
 } from "./lib/formatting";
 import { getSnapshots } from "./lib/history";
 import { calculatePrediction } from "./lib/prediction";
@@ -82,7 +89,13 @@ function timeAgo(iso: string): string {
 
 // ── Detail Components ────────────────────────────────────────────────
 
-function SessionDetail({ session }: { session: SessionMetric }) {
+function SessionDetail({
+  session,
+  sessionCarbonG,
+}: {
+  session: SessionMetric;
+  sessionCarbonG?: number;
+}) {
   const topTools = Object.entries(session.toolBreakdown)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 8);
@@ -142,6 +155,15 @@ function SessionDetail({ session }: { session: SessionMetric }) {
             title="Ended"
             text={new Date(session.endedAt).toLocaleString()}
           />
+          {sessionCarbonG !== undefined && (
+            <>
+              <List.Item.Detail.Metadata.Separator />
+              <List.Item.Detail.Metadata.Label
+                title="Estimated CO2"
+                text={`${formatCarbon(sessionCarbonG)} CO2`}
+              />
+            </>
+          )}
         </List.Item.Detail.Metadata>
       }
     />
@@ -202,7 +224,15 @@ function OverviewDetail({ stats }: { stats: AggregateStats }) {
   );
 }
 
-function ProjectDetail({ project }: { project: ProjectStats }) {
+function ProjectDetail({
+  project,
+  projectCarbonG,
+  projectCarbonPerSession,
+}: {
+  project: ProjectStats;
+  projectCarbonG?: number;
+  projectCarbonPerSession?: number;
+}) {
   return (
     <List.Item.Detail
       metadata={
@@ -242,6 +272,21 @@ function ProjectDetail({ project }: { project: ProjectStats }) {
             title="Last Active"
             text={new Date(project.lastActive).toLocaleString()}
           />
+          {projectCarbonG !== undefined && (
+            <>
+              <List.Item.Detail.Metadata.Separator />
+              <List.Item.Detail.Metadata.Label
+                title="Total CO2"
+                text={`${formatCarbon(projectCarbonG)} CO2`}
+              />
+              {projectCarbonPerSession !== undefined && (
+                <List.Item.Detail.Metadata.Label
+                  title="Avg CO2/Session"
+                  text={`${formatCarbon(projectCarbonPerSession)}`}
+                />
+              )}
+            </>
+          )}
         </List.Item.Detail.Metadata>
       }
     />
@@ -515,7 +560,15 @@ export default function VelocityDashboard() {
           scanRepos(),
         ]);
 
-      const carbon = await getCarbonSummary(sessions);
+      const [carbon, budgetSetting] = await Promise.all([
+        getCarbonSummary(sessions),
+        getCarbonBudgetSetting(),
+      ]);
+
+      const carbonBudget =
+        carbon && budgetSetting
+          ? getCarbonBudget(sessions, carbon.totalEmissionsG, budgetSetting)
+          : null;
 
       // Update provider cache
       for (const { provider, result } of providerResults) {
@@ -554,6 +607,7 @@ export default function VelocityDashboard() {
         providers: providersWithPredictions,
         repos: enrichedRepos,
         carbon,
+        carbonBudget,
       };
     },
     [],
@@ -566,6 +620,7 @@ export default function VelocityDashboard() {
   const providers = data?.providers ?? [];
   const repos = data?.repos ?? [];
   const carbon = data?.carbon ?? null;
+  const carbonBudget: CarbonBudget | null = data?.carbonBudget ?? null;
 
   async function handleRefresh() {
     await Promise.all([
@@ -689,11 +744,7 @@ export default function VelocityDashboard() {
           <List.Item
             title="Total Emissions"
             icon={Icon.Leaf}
-            subtitle={
-              carbon.totalEmissionsKg >= 1
-                ? `${carbon.totalEmissionsKg.toFixed(2)} kg CO2`
-                : `${carbon.totalEmissionsG.toFixed(1)} g CO2`
-            }
+            subtitle={`${formatCarbon(carbon.totalEmissionsG)} CO2`}
             accessories={[
               {
                 tag: {
@@ -703,45 +754,259 @@ export default function VelocityDashboard() {
               },
             ]}
             detail={<CarbonDetail carbon={carbon} />}
+            actions={
+              <ActionPanel>
+                <Action
+                  title="Refresh"
+                  icon={Icon.ArrowClockwise}
+                  onAction={handleRefresh}
+                />
+                <Action.CopyToClipboard
+                  title="Copy Carbon Report"
+                  content={exportCarbonReport(carbon, "markdown")}
+                  shortcut={{ modifiers: ["cmd", "shift"], key: "c" }}
+                />
+              </ActionPanel>
+            }
+          />
+          <List.Item
+            title="Carbon Efficiency"
+            icon={Icon.Gauge}
+            subtitle={`${(carbon.gPer1kTokens ?? 0).toFixed(4)} g/1K tokens`}
+            accessories={[
+              {
+                tag: {
+                  value: `${carbon.byModel.length} models`,
+                  color: Color.Blue,
+                },
+              },
+            ]}
+            detail={
+              <List.Item.Detail
+                metadata={
+                  <List.Item.Detail.Metadata>
+                    <List.Item.Detail.Metadata.Label
+                      title="Overall Efficiency"
+                      text={`${(carbon.gPer1kTokens ?? 0).toFixed(4)} g/1K tokens`}
+                    />
+                    <List.Item.Detail.Metadata.Separator />
+                    <List.Item.Detail.Metadata.Label title="By Model" />
+                    {carbon.byModel.map((m) => (
+                      <List.Item.Detail.Metadata.Label
+                        key={m.model}
+                        title={`  ${formatModelName(m.model)}`}
+                        text={`${m.gPerMinute.toFixed(4)} g/min — ${formatCarbon(m.emissionsG)} total`}
+                      />
+                    ))}
+                  </List.Item.Detail.Metadata>
+                }
+              />
+            }
             actions={defaultActions}
           />
+          {carbonBudget && (
+            <List.Item
+              title="Budget"
+              icon={carbonBudget.onTrack ? Icon.Checkmark : Icon.Warning}
+              subtitle={`${Math.round(carbonBudget.percentUsed)}% used`}
+              accessories={[
+                {
+                  tag: {
+                    value: carbonBudget.onTrack ? "On Track" : "Over Pace",
+                    color: getCarbonColor(carbonBudget.percentUsed),
+                  },
+                },
+              ]}
+              detail={
+                <List.Item.Detail
+                  metadata={
+                    <List.Item.Detail.Metadata>
+                      <List.Item.Detail.Metadata.Label
+                        title="Monthly Budget"
+                        text={`${formatCarbon(carbonBudget.monthlyBudgetG)} CO2`}
+                      />
+                      <List.Item.Detail.Metadata.Label
+                        title="Used This Month"
+                        text={`${formatCarbon(carbonBudget.currentMonthG)} CO2`}
+                      />
+                      <List.Item.Detail.Metadata.Label
+                        title="Remaining"
+                        text={`${formatCarbon(carbonBudget.remainingG)}`}
+                      />
+                      <List.Item.Detail.Metadata.Separator />
+                      <List.Item.Detail.Metadata.Label
+                        title="Projected Month Total"
+                        text={`${formatCarbon(carbonBudget.projectedMonthG)}`}
+                      />
+                      <List.Item.Detail.Metadata.TagList title="Status">
+                        <List.Item.Detail.Metadata.TagList.Item
+                          text={carbonBudget.onTrack ? "On Track" : "Over Pace"}
+                          color={getCarbonColor(carbonBudget.percentUsed)}
+                        />
+                      </List.Item.Detail.Metadata.TagList>
+                    </List.Item.Detail.Metadata>
+                  }
+                />
+              }
+              actions={defaultActions}
+            />
+          )}
+          {carbon.byProject.length > 0 && (
+            <List.Item
+              title={`Top Emitter: ${carbon.byProject[0].projectName}`}
+              icon={Icon.Folder}
+              subtitle={`${formatCarbon(carbon.byProject[0].emissionsG)} CO2`}
+              accessories={[
+                {
+                  tag: {
+                    value: `${carbon.byProject[0].sessions} sessions`,
+                    color: Color.Green,
+                  },
+                },
+              ]}
+              detail={
+                <List.Item.Detail
+                  metadata={
+                    <List.Item.Detail.Metadata>
+                      <List.Item.Detail.Metadata.Label title="Project Leaderboard" />
+                      <List.Item.Detail.Metadata.Separator />
+                      {carbon.byProject.map((p, i) => (
+                        <List.Item.Detail.Metadata.Label
+                          key={p.project}
+                          title={`  ${i + 1}. ${p.projectName}`}
+                          text={`${formatCarbon(p.emissionsG)} — ${p.sessions} sessions — ${p.gPerSession.toFixed(2)} g/session`}
+                        />
+                      ))}
+                    </List.Item.Detail.Metadata>
+                  }
+                />
+              }
+              actions={defaultActions}
+            />
+          )}
+          {carbon.weeklyTrend.length >= 2 &&
+            (() => {
+              const thisWeek =
+                carbon.weeklyTrend[carbon.weeklyTrend.length - 1];
+              const lastWeek =
+                carbon.weeklyTrend[carbon.weeklyTrend.length - 2];
+              const pctChange =
+                lastWeek.emissionsG > 0
+                  ? ((thisWeek.emissionsG - lastWeek.emissionsG) /
+                      lastWeek.emissionsG) *
+                    100
+                  : 0;
+              const trendIcon =
+                pctChange > 0
+                  ? Icon.ArrowUp
+                  : pctChange < 0
+                    ? Icon.ArrowDown
+                    : Icon.Minus;
+              const changeStr =
+                pctChange === 0
+                  ? "No change"
+                  : `${pctChange > 0 ? "+" : ""}${Math.round(pctChange)}%`;
+              return (
+                <List.Item
+                  title="This Week vs Last"
+                  icon={trendIcon}
+                  subtitle={changeStr}
+                  accessories={[
+                    {
+                      tag: {
+                        value: `${formatCarbon(thisWeek.emissionsG)} this week`,
+                        color: pctChange > 10 ? Color.Orange : Color.Green,
+                      },
+                    },
+                  ]}
+                  detail={
+                    <List.Item.Detail
+                      metadata={
+                        <List.Item.Detail.Metadata>
+                          <List.Item.Detail.Metadata.Label title="Daily Trend (Last 7 Days)" />
+                          <List.Item.Detail.Metadata.Separator />
+                          {carbon.dailyTrend.map((d) => (
+                            <List.Item.Detail.Metadata.Label
+                              key={d.period}
+                              title={`  ${d.period}`}
+                              text={`${formatCarbon(d.emissionsG)} — ${d.sessions} sessions`}
+                            />
+                          ))}
+                          <List.Item.Detail.Metadata.Separator />
+                          <List.Item.Detail.Metadata.Label title="Weekly Trend" />
+                          {carbon.weeklyTrend.map((w) => (
+                            <List.Item.Detail.Metadata.Label
+                              key={w.period}
+                              title={`  ${w.period}`}
+                              text={`${formatCarbon(w.emissionsG)} — ${w.sessions} sessions`}
+                            />
+                          ))}
+                        </List.Item.Detail.Metadata>
+                      }
+                    />
+                  }
+                  actions={defaultActions}
+                />
+              );
+            })()}
         </List.Section>
       )}
 
       {/* Section: Projects */}
       {projects.length > 0 && (
         <List.Section title={`Projects (${projects.length})`}>
-          {projects.map((p) => (
-            <List.Item
-              key={p.project}
-              title={p.projectName}
-              subtitle={`${p.sessions} sessions, ${formatDuration(p.totalDurationMin)}`}
-              icon={Icon.Folder}
-              accessories={[
-                { tag: formatModelName(p.mostUsedModel) },
-                { text: timeAgo(p.lastActive) },
-              ]}
-              detail={<ProjectDetail project={p} />}
-              actions={
-                <ActionPanel>
-                  <Action
-                    title="Refresh"
-                    icon={Icon.ArrowClockwise}
-                    onAction={handleRefresh}
+          {projects.map((p) => {
+            const projectCarbon = carbon?.byProject.find(
+              (cp) => cp.project === p.project,
+            );
+            return (
+              <List.Item
+                key={p.project}
+                title={p.projectName}
+                subtitle={`${p.sessions} sessions, ${formatDuration(p.totalDurationMin)}`}
+                icon={Icon.Folder}
+                accessories={[
+                  ...(projectCarbon
+                    ? [
+                        {
+                          tag: {
+                            value: `${formatCarbon(projectCarbon.emissionsG)} CO2`,
+                            color: Color.Green,
+                          },
+                        },
+                      ]
+                    : []),
+                  { tag: formatModelName(p.mostUsedModel) },
+                  { text: timeAgo(p.lastActive) },
+                ]}
+                detail={
+                  <ProjectDetail
+                    project={p}
+                    projectCarbonG={projectCarbon?.emissionsG}
+                    projectCarbonPerSession={projectCarbon?.gPerSession}
                   />
-                  <Action.CopyToClipboard
-                    title="Copy Project Stats"
-                    content={`${p.projectName}: ${p.sessions} sessions, ${formatDuration(p.totalDurationMin)}, ${formatTokens(p.totalOutputTokens)} tokens out`}
-                    shortcut={{ modifiers: ["cmd"], key: "c" }}
-                  />
-                  <Action.OpenInBrowser
-                    title="Open in Terminal"
-                    url={`file://${p.project}`}
-                  />
-                </ActionPanel>
-              }
-            />
-          ))}
+                }
+                actions={
+                  <ActionPanel>
+                    <Action
+                      title="Refresh"
+                      icon={Icon.ArrowClockwise}
+                      onAction={handleRefresh}
+                    />
+                    <Action.CopyToClipboard
+                      title="Copy Project Stats"
+                      content={`${p.projectName}: ${p.sessions} sessions, ${formatDuration(p.totalDurationMin)}, ${formatTokens(p.totalOutputTokens)} tokens out`}
+                      shortcut={{ modifiers: ["cmd"], key: "c" }}
+                    />
+                    <Action.OpenInBrowser
+                      title="Open in Terminal"
+                      url={`file://${p.project}`}
+                    />
+                  </ActionPanel>
+                }
+              />
+            );
+          })}
         </List.Section>
       )}
 
@@ -798,43 +1063,58 @@ export default function VelocityDashboard() {
             subtitle="Claude Code session data will appear here automatically"
           />
         )}
-        {sessions.slice(0, 50).map((s) => (
-          <List.Item
-            key={s.sessionId}
-            title={s.projectName}
-            subtitle={`${formatDuration(s.durationMin)}, ${s.turns} turns`}
-            icon={Icon.Terminal}
-            accessories={[
-              { tag: formatModelName(s.model) },
-              ...(s.subAgentsSpawned > 0
-                ? [
-                    {
-                      tag: {
-                        value: `${s.subAgentsSpawned} agents`,
-                        color: Color.Purple,
+        {sessions.slice(0, 50).map((s) => {
+          const sCarbonG = carbon
+            ? getSessionCarbon(s, sessions, carbon.totalEmissionsG)
+            : undefined;
+          return (
+            <List.Item
+              key={s.sessionId}
+              title={s.projectName}
+              subtitle={`${formatDuration(s.durationMin)}, ${s.turns} turns`}
+              icon={Icon.Terminal}
+              accessories={[
+                ...(sCarbonG !== undefined
+                  ? [
+                      {
+                        tag: {
+                          value: `${formatCarbon(sCarbonG)} CO2`,
+                          color: Color.Green,
+                        },
                       },
-                    },
-                  ]
-                : []),
-              { text: timeAgo(s.startedAt) },
-            ]}
-            detail={<SessionDetail session={s} />}
-            actions={
-              <ActionPanel>
-                <Action
-                  title="Refresh"
-                  icon={Icon.ArrowClockwise}
-                  onAction={handleRefresh}
-                />
-                <Action.CopyToClipboard
-                  title="Copy Session Info"
-                  content={`${s.projectName}: ${formatDuration(s.durationMin)}, ${s.turns} turns, ${formatTokens(s.totalOutputTokens)} tokens out, ${s.toolUses} tool uses`}
-                  shortcut={{ modifiers: ["cmd"], key: "c" }}
-                />
-              </ActionPanel>
-            }
-          />
-        ))}
+                    ]
+                  : []),
+                { tag: formatModelName(s.model) },
+                ...(s.subAgentsSpawned > 0
+                  ? [
+                      {
+                        tag: {
+                          value: `${s.subAgentsSpawned} agents`,
+                          color: Color.Purple,
+                        },
+                      },
+                    ]
+                  : []),
+                { text: timeAgo(s.startedAt) },
+              ]}
+              detail={<SessionDetail session={s} sessionCarbonG={sCarbonG} />}
+              actions={
+                <ActionPanel>
+                  <Action
+                    title="Refresh"
+                    icon={Icon.ArrowClockwise}
+                    onAction={handleRefresh}
+                  />
+                  <Action.CopyToClipboard
+                    title="Copy Session Info"
+                    content={`${s.projectName}: ${formatDuration(s.durationMin)}, ${s.turns} turns, ${formatTokens(s.totalOutputTokens)} tokens out, ${s.toolUses} tool uses`}
+                    shortcut={{ modifiers: ["cmd"], key: "c" }}
+                  />
+                </ActionPanel>
+              }
+            />
+          );
+        })}
       </List.Section>
     </List>
   );

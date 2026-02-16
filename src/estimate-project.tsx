@@ -15,16 +15,25 @@ import {
 import { getProjectStats } from "./lib/velocity";
 import { estimateSessionCarbon } from "./lib/carbon";
 
+// Model efficiency ratios relative to Opus
+const MODEL_CARBON_RATIOS: Record<string, { label: string; ratio: number }> = {
+  opus: { label: "Opus", ratio: 1.0 },
+  sonnet: { label: "Sonnet", ratio: 0.6 },
+  haiku: { label: "Haiku", ratio: 0.3 },
+};
+
 function ResultView({
   result,
   humanHours,
   repo,
   carbonG,
+  selectedModel,
 }: {
   result: EstimateResult;
   humanHours: number;
   repo?: EnrichedRepo;
   carbonG?: number;
+  selectedModel: ModelType;
 }) {
   const hours = Math.floor(result.estimatedMinutes / 60);
   const mins = result.estimatedMinutes % 60;
@@ -65,7 +74,21 @@ ${repo.matchedProject ? `| **Matched Sessions** | ${repo.matchedProject.sessions
 | **Confidence** | ${result.confidence} (+${result.confidence === "high" ? "20" : result.confidence === "medium" ? "50" : "100"}% buffer) |
 | **Data Source** | ${source} |
 | **Avg Output Rate** | ${tokensInfo} |
-${carbonG !== undefined ? `| **Projected CO2** | ${carbonG >= 1000 ? `${(carbonG / 1000).toFixed(2)} kg` : `${carbonG.toFixed(1)} g`} |\n` : ""}${repoSection}
+${carbonG !== undefined ? `| **Projected CO2** | ${carbonG >= 1000 ? `${(carbonG / 1000).toFixed(2)} kg` : `${carbonG.toFixed(1)} g`} (${MODEL_CARBON_RATIOS[selectedModel]?.label ?? selectedModel}) |\n` : ""}${
+    carbonG !== undefined
+      ? Object.entries(MODEL_CARBON_RATIOS)
+          .filter(([key]) => key !== selectedModel)
+          .map(([, info]) => {
+            const selectedRatio =
+              MODEL_CARBON_RATIOS[selectedModel]?.ratio ?? 1.0;
+            const altCarbonG = (carbonG * info.ratio) / selectedRatio;
+            const savings = Math.round((1 - info.ratio / selectedRatio) * 100);
+            const sign = savings > 0 ? "-" : "+";
+            return `| **Alt: ${info.label}** | ~${altCarbonG >= 1000 ? `${(altCarbonG / 1000).toFixed(2)} kg` : `${altCarbonG.toFixed(1)} g`} (${sign}${Math.abs(savings)}%) |`;
+          })
+          .join("\n") + "\n"
+      : ""
+  }${repoSection}
   `.trim();
 
   return (
@@ -89,6 +112,7 @@ export default function EstimateProject() {
     humanHours: number;
     repo?: EnrichedRepo;
     carbonG?: number;
+    selectedModel: ModelType;
   } | null>(null);
   const [repos, setRepos] = useState<EnrichedRepo[]>([]);
 
@@ -141,6 +165,7 @@ export default function EstimateProject() {
       humanHours,
       repo: selectedRepo,
       carbonG: carbonEstimate?.emissionsG,
+      selectedModel: values.model,
     });
   }
 
@@ -151,6 +176,7 @@ export default function EstimateProject() {
         humanHours={result.humanHours}
         repo={result.repo}
         carbonG={result.carbonG}
+        selectedModel={result.selectedModel}
       />
     );
   }
