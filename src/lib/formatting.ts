@@ -1,5 +1,42 @@
-import { Color } from "@raycast/api";
+import { Color, Icon } from "@raycast/api";
 import type { MetricLine, ProgressLine } from "../providers/types";
+import type { PaceLabel } from "./prediction";
+
+// ── Carbon Formatting ────────────────────────────────────────────────
+
+/**
+ * Format carbon emissions for display.
+ */
+export function formatCarbon(grams: number): string {
+  if (grams >= 1000) return `${(grams / 1000).toFixed(2)} kg`;
+  return `${grams.toFixed(1)} g`;
+}
+
+/**
+ * Format a carbon rate for display.
+ */
+export function formatCarbonRate(gPerMin: number): string {
+  return `${gPerMin.toFixed(4)} g/min`;
+}
+
+/**
+ * Get a Raycast Color based on carbon budget usage percentage.
+ */
+export function getCarbonColor(percentOfBudget: number): Color {
+  if (percentOfBudget >= 90) return Color.Red;
+  if (percentOfBudget >= 70) return Color.Orange;
+  if (percentOfBudget >= 50) return Color.Yellow;
+  return Color.Green;
+}
+
+/**
+ * Get an icon based on carbon budget usage percentage.
+ */
+export function getCarbonIcon(percentOfBudget: number): Icon {
+  if (percentOfBudget >= 90) return Icon.Warning;
+  if (percentOfBudget >= 50) return Icon.Plant;
+  return Icon.Leaf;
+}
 
 /**
  * Format a usage percentage for display.
@@ -20,7 +57,11 @@ export function formatDollars(value: number): string {
 /**
  * Format a count with suffix.
  */
-export function formatCount(used: number, limit: number, suffix: string): string {
+export function formatCount(
+  used: number,
+  limit: number,
+  suffix: string,
+): string {
   return `${Math.round(used)}/${Math.round(limit)} ${suffix}`;
 }
 
@@ -97,7 +138,7 @@ export function getUsagePercent(line: ProgressLine): number {
  * Get the highest usage percentage from all provider results.
  */
 export function getHighestUsage(
-  results: Array<{ lines: MetricLine[] }>
+  results: Array<{ lines: MetricLine[] }>,
 ): { percent: number; label: string } | null {
   let highest: { percent: number; label: string } | null = null;
 
@@ -116,12 +157,56 @@ export function getHighestUsage(
 }
 
 /**
+ * Format a burn rate for display.
+ */
+export function formatBurnRate(rate: number): string {
+  if (Math.abs(rate) < 0.1) return "idle";
+  return `${rate.toFixed(1)}%/hr`;
+}
+
+/**
+ * Format a time-to-limit duration for display.
+ */
+export function formatTimeToLimit(ms: number | null): string {
+  if (ms === null) return "";
+  if (ms <= 0) return "now";
+  const totalMin = Math.round(ms / 60000);
+  const hours = Math.floor(totalMin / 60);
+  const mins = totalMin % 60;
+  if (hours > 24) {
+    const days = Math.floor(hours / 24);
+    const remHr = hours % 24;
+    return remHr > 0 ? `~${days}d ${remHr}h to limit` : `~${days}d to limit`;
+  }
+  if (hours > 0) {
+    return mins > 0 ? `~${hours}h ${mins}m to limit` : `~${hours}h to limit`;
+  }
+  return `~${totalMin}m to limit`;
+}
+
+/**
+ * Get an icon for the pace label.
+ */
+export function getPaceIcon(paceLabel: PaceLabel): Icon {
+  switch (paceLabel) {
+    case "ahead":
+      return Icon.Bolt;
+    case "on track":
+      return Icon.Checkmark;
+    case "behind":
+      return Icon.Clock;
+    case "idle":
+      return Icon.Minus;
+    case "at limit":
+      return Icon.ExclamationMark;
+  }
+}
+
+/**
  * Title-case a string (for plan labels).
  */
 export function titleCase(str: string): string {
-  return str
-    .toLowerCase()
-    .replace(/\b[a-z]/g, (c) => c.toUpperCase());
+  return str.toLowerCase().replace(/\b[a-z]/g, (c) => c.toUpperCase());
 }
 
 /**
@@ -129,8 +214,6 @@ export function titleCase(str: string): string {
  */
 export function formatPlanLabel(raw: string): string {
   // Common patterns: "pro", "plus", "max_plus", "LEVEL_PREMIUM"
-  const cleaned = raw
-    .replace(/^LEVEL_/, "")
-    .replace(/_/g, " ");
+  const cleaned = raw.replace(/^LEVEL_/, "").replace(/_/g, " ");
   return titleCase(cleaned);
 }

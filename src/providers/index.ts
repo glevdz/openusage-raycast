@@ -1,9 +1,8 @@
 import { claude } from "./claude";
 import { codex } from "./codex";
-import { kimi } from "./kimi";
 import type { Provider, ProbeResult } from "./types";
 
-export const providers: Provider[] = [claude, codex, kimi];
+export const providers: Provider[] = [claude, codex];
 
 export interface ProviderWithResult {
   provider: Provider;
@@ -29,13 +28,13 @@ export async function probeAll(): Promise<ProviderWithResult[]> {
           } as ProbeResult,
         };
       }
-    })
+    }),
   );
 
   return results
     .filter(
       (r): r is PromiseFulfilledResult<ProviderWithResult> =>
-        r.status === "fulfilled"
+        r.status === "fulfilled",
     )
     .map((r) => r.value);
 }

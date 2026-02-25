@@ -8,7 +8,8 @@ const USAGE_URL = "https://api.anthropic.com/api/oauth/usage";
 const PROFILE_URL = "https://api.anthropic.com/api/oauth/profile";
 const REFRESH_URL = "https://platform.claude.com/v1/oauth/token";
 const CLIENT_ID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e";
-const SCOPES = "user:profile user:inference user:sessions:claude_code user:mcp_servers";
+const SCOPES =
+  "user:profile user:inference user:sessions:claude_code user:mcp_servers";
 const REFRESH_BUFFER_MS = 5 * 60 * 1000; // 5 minutes before expiration
 
 interface ClaudeOAuth {
@@ -43,7 +44,10 @@ interface UsageResponse {
   [key: string]: unknown; // Catch any additional balance/credit fields
 }
 
-function loadCredentials(): { oauth: ClaudeOAuth; fullData: ClaudeCredentials } | null {
+function loadCredentials(): {
+  oauth: ClaudeOAuth;
+  fullData: ClaudeCredentials;
+} | null {
   const parsed = readJsonFile<ClaudeCredentials>(CRED_FILE);
   if (!parsed) return null;
 
@@ -60,7 +64,7 @@ function needsRefresh(oauth: ClaudeOAuth): boolean {
 
 async function doRefresh(
   oauth: ClaudeOAuth,
-  fullData: ClaudeCredentials
+  fullData: ClaudeCredentials,
 ): Promise<string | null> {
   if (!oauth.refreshToken) return null;
 
@@ -120,7 +124,10 @@ function formatDollars(value: number): number {
  * Fetch the actual plan label from the profile API.
  * Falls back to credentials file subscriptionType if profile fetch fails.
  */
-async function fetchPlanLabel(accessToken: string, fallback?: string): Promise<string | undefined> {
+async function fetchPlanLabel(
+  accessToken: string,
+  fallback?: string,
+): Promise<string | undefined> {
   try {
     const resp = await fetch(PROFILE_URL, {
       method: "GET",
@@ -209,7 +216,10 @@ async function probe(): Promise<ProbeResult> {
         });
       }
     } catch {
-      return { lines: [], error: "Token expired. Run `claude` to log in again." };
+      return {
+        lines: [],
+        error: "Token expired. Run `claude` to log in again.",
+      };
     }
   }
 
@@ -257,7 +267,10 @@ async function probe(): Promise<ProbeResult> {
     });
   }
 
-  if (data.seven_day_sonnet && typeof data.seven_day_sonnet.utilization === "number") {
+  if (
+    data.seven_day_sonnet &&
+    typeof data.seven_day_sonnet.utilization === "number"
+  ) {
     lines.push({
       type: "progress",
       label: "Sonnet",
@@ -272,7 +285,11 @@ async function probe(): Promise<ProbeResult> {
   if (data.extra_usage?.is_enabled) {
     const usedRaw = data.extra_usage.used_credits;
     const limitRaw = data.extra_usage.monthly_limit;
-    if (typeof usedRaw === "number" && typeof limitRaw === "number" && limitRaw > 0) {
+    if (
+      typeof usedRaw === "number" &&
+      typeof limitRaw === "number" &&
+      limitRaw > 0
+    ) {
       // API returns values in cents — convert to dollars
       const usedDollars = usedRaw / 100;
       const limitDollars = limitRaw / 100;
@@ -294,9 +311,10 @@ async function probe(): Promise<ProbeResult> {
 
   // Show account balance if available
   if (data.account_balance !== undefined && data.account_balance !== null) {
-    const balance = typeof data.account_balance === "number"
-      ? data.account_balance / 100  // cents to dollars
-      : 0;
+    const balance =
+      typeof data.account_balance === "number"
+        ? data.account_balance / 100 // cents to dollars
+        : 0;
     lines.push({
       type: "text",
       label: "Account balance",
@@ -305,7 +323,12 @@ async function probe(): Promise<ProbeResult> {
   }
 
   if (lines.length === 0) {
-    lines.push({ type: "badge", label: "Status", text: "No usage data", color: "#a3a3a3" });
+    lines.push({
+      type: "badge",
+      label: "Status",
+      text: "No usage data",
+      color: "#a3a3a3",
+    });
   }
 
   return { plan, lines };

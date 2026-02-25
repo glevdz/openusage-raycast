@@ -27,7 +27,8 @@ function getProviderUrl(providerId: string): string | undefined {
 function getPrimaryUsage(lines: MetricLine[]): ProgressLine | null {
   // Session (first percent-based progress line) is the primary metric
   const percentLines = lines.filter(
-    (l): l is ProgressLine => l.type === "progress" && l.format.kind === "percent"
+    (l): l is ProgressLine =>
+      l.type === "progress" && l.format.kind === "percent",
   );
   return percentLines.length > 0 ? percentLines[0] : null;
 }
@@ -53,7 +54,10 @@ function ProviderDetail({ result }: { result: ProviderWithResult }) {
       <List.Item.Detail
         metadata={
           <List.Item.Detail.Metadata>
-            <List.Item.Detail.Metadata.Label title="Error" text={probeResult.error} />
+            <List.Item.Detail.Metadata.Label
+              title="Error"
+              text={probeResult.error}
+            />
           </List.Item.Detail.Metadata>
         }
       />
@@ -66,7 +70,10 @@ function ProviderDetail({ result }: { result: ProviderWithResult }) {
         <List.Item.Detail.Metadata>
           {probeResult.plan && (
             <>
-              <List.Item.Detail.Metadata.Label title="Plan" text={probeResult.plan} />
+              <List.Item.Detail.Metadata.Label
+                title="Plan"
+                text={probeResult.plan}
+              />
               <List.Item.Detail.Metadata.Separator />
             </>
           )}
@@ -90,7 +97,13 @@ function ProviderDetail({ result }: { result: ProviderWithResult }) {
                     )}
                     <List.Item.Detail.Metadata.TagList title="Status">
                       <List.Item.Detail.Metadata.TagList.Item
-                        text={pct >= 90 ? "High Usage" : pct >= 70 ? "Moderate" : "On Track"}
+                        text={
+                          pct >= 90
+                            ? "High Usage"
+                            : pct >= 70
+                              ? "Moderate"
+                              : "On Track"
+                        }
                         color={color}
                       />
                     </List.Item.Detail.Metadata.TagList>
@@ -110,7 +123,10 @@ function ProviderDetail({ result }: { result: ProviderWithResult }) {
                 );
               case "badge":
                 return (
-                  <List.Item.Detail.Metadata.TagList key={idx} title={line.label}>
+                  <List.Item.Detail.Metadata.TagList
+                    key={idx}
+                    title={line.label}
+                  >
                     <List.Item.Detail.Metadata.TagList.Item
                       text={line.text}
                       color={Color.SecondaryText}
@@ -140,7 +156,7 @@ export default function ShowUsage() {
     [],
     {
       keepPreviousData: true,
-    }
+    },
   );
 
   const results: ProviderWithResult[] = data ?? [];
@@ -163,16 +179,27 @@ export default function ShowUsage() {
               subtitle={subtitle}
               icon={{ source: provider.icon }}
               accessories={[{ tag }]}
-              detail={<ProviderDetail result={{ provider, result: probeResult }} />}
+              detail={
+                <ProviderDetail result={{ provider, result: probeResult }} />
+              }
               actions={
                 <ActionPanel>
-                  <Action title="Refresh" icon={Icon.ArrowClockwise} onAction={() => revalidate()} />
+                  <Action
+                    title="Refresh"
+                    icon={Icon.ArrowClockwise}
+                    onAction={() => revalidate()}
+                  />
                   {providerUrl && (
-                    <Action.OpenInBrowser title={`Open ${provider.name}`} url={providerUrl} />
+                    <Action.OpenInBrowser
+                      title={`Open ${provider.name}`}
+                      url={providerUrl}
+                    />
                   )}
                   <Action.CopyToClipboard
                     title="Copy Usage Summary"
-                    content={probeResult.lines.map((l) => `${l.label}: ${formatLineValue(l)}`).join("\n")}
+                    content={probeResult.lines
+                      .map((l) => `${l.label}: ${formatLineValue(l)}`)
+                      .join("\n")}
                     shortcut={{ modifiers: ["cmd"], key: "c" }}
                   />
                 </ActionPanel>
